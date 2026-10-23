@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type ComponentRef, useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -59,7 +59,7 @@ export default function ChatScreen() {
   const [error, setError] = useState<string | null>(null);
   const [sheet, setSheet] = useState<'menu' | 'offer' | 'block' | 'report-user' | null>(null);
   const [reportMessage, setReportMessage] = useState<Message | null>(null);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
 
   const isBuyer = convo.data?.buyer_id === me;
   const other = isBuyer ? convo.data?.seller : convo.data?.buyer;

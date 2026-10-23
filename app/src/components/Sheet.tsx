@@ -89,7 +89,7 @@ export function ConfirmSheet({
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
+  backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.6)' },
   sheet: {
     maxHeight: '88%',
     width: '100%',
