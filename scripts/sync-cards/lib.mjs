@@ -3,6 +3,16 @@
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Returns a function that waits so calls are at least `ms` apart (API rate limits). */
+export function createThrottle(ms) {
+  let last = 0;
+  return async () => {
+    const wait = last + ms - Date.now();
+    if (wait > 0) await sleep(wait);
+    last = Date.now();
+  };
+}
+
 /** GET a JSON URL, retrying on rate limits and server errors. */
 export async function getJson(url, { headers = {}, retries = 4 } = {}) {
   for (let attempt = 0; ; attempt += 1) {

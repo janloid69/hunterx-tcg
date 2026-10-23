@@ -1,7 +1,7 @@
 // Pokémon TCG cards from pokemontcg.io (v2 API).
 // Free; an optional key (POKEMONTCG_API_KEY) raises the daily limit.
 
-import { getJson, isoDate, sortNumber } from '../lib.mjs';
+import { createThrottle, getJson, isoDate, sortNumber } from '../lib.mjs';
 
 const API = 'https://api.pokemontcg.io/v2';
 const SOURCE = 'pokemontcg.io';
@@ -51,10 +51,16 @@ export function setsNeedingCards(apiSets, knownCounts, today = new Date()) {
 
 export async function syncPokemon(db, { apiKey, log = console.log } = {}) {
   const headers = apiKey ? { 'X-Api-Key': apiKey } : {};
+  // Without a key the API allows 30 requests a minute, so space them out.
+  const throttle = createThrottle(apiKey ? 400 : 2100);
+  const get = async (url) => {
+    await throttle();
+    return getJson(url, { headers, retries: 6 });
+  };
 
   const apiSets = [];
   for (let page = 1; ; page += 1) {
-    const body = await getJson(`${API}/sets?page=${page}&pageSize=250&orderBy=releaseDate`, { headers });
+    const body = await get(`${API}/sets?page=${page}&pageSize=250&orderBy=releaseDate`);
     apiSets.push(...body.data);
     if (apiSets.length >= body.totalCount || body.data.length === 0) break;
   }
@@ -71,7 +77,7 @@ export async function syncPokemon(db, { apiKey, log = console.log } = {}) {
     const cards = [];
     for (let page = 1; ; page += 1) {
       const query = `q=set.id:${encodeURIComponent(set.id)}&page=${page}&pageSize=250&select=id,name,number,rarity,set,images`;
-      const body = await getJson(`${API}/cards?${query}`, { headers });
+      const body = await get(`${API}/cards?${query}`);
       cards.push(...body.data);
       if (cards.length >= body.totalCount || body.data.length === 0) break;
     }
