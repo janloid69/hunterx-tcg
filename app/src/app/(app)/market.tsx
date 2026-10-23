@@ -7,10 +7,10 @@ import { colors } from '@/lib/theme';
 
 const COMING = [
   'Listings with photos, condition, price, and meetup or shipping',
-  'Offers and chat with sellers',
+  'Messages with sellers right here, so buyers never have to join the Discord',
+  'Offers on listings',
   'A vouch after every finished deal',
   'Verified Seller badges for HunterX Circle members',
-  'Free HunterX middleman for bigger deals',
 ];
 
 export default function MarketScreen() {

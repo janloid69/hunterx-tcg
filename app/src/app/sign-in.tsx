@@ -13,7 +13,7 @@ import { colors, fonts } from '@/lib/theme';
 const FEATURES = [
   { title: 'Binder and set progress', body: 'Every card you own, what each set is missing, and what you paid.' },
   { title: 'Peso price guide', body: 'Prices from real sales logged by members in the Philippines.' },
-  { title: 'Safe trading', body: 'Verified Sellers, vouches after every deal, and a free middleman.' },
+  { title: 'Message sellers here', body: 'Chat with sellers on the site. No need to join the Discord to buy.' },
 ];
 
 export default function SignInScreen() {
