@@ -11,11 +11,19 @@ import { syncOnePiece } from './sources/one-piece.mjs';
 import { syncPokemon } from './sources/pokemon.mjs';
 import { syncRiftbound } from './sources/riftbound.mjs';
 
+// Quick sources first, so their cards show up while Pokémon is still loading.
 const SOURCES = {
-  pokemon: (db) => syncPokemon(db, { apiKey: process.env.POKEMONTCG_API_KEY }),
   'one-piece': (db) => syncOnePiece(db),
   riftbound: (db) => syncRiftbound(db),
+  pokemon: (db) => syncPokemon(db, { apiKey: process.env.POKEMONTCG_API_KEY }),
 };
+
+// In GitHub Actions, results also appear as notes on the run's summary page.
+const inActions = process.env.GITHUB_ACTIONS === 'true';
+const oneLine = (text) => String(text).replace(/\r?\n/g, ' ').slice(0, 900);
+function report(level, game, message) {
+  if (inActions) console.log(`::${level} title=${game}::${oneLine(message)}`);
+}
 
 const requested = process.argv.slice(2);
 const games = requested.length > 0 ? requested : Object.keys(SOURCES);
@@ -34,11 +42,15 @@ let failures = 0;
 for (const game of games) {
   const started = Date.now();
   try {
-    await SOURCES[game](db);
-    console.log(`✓ ${game} done in ${Math.round((Date.now() - started) / 1000)}s`);
+    const result = await SOURCES[game](db);
+    const seconds = Math.round((Date.now() - started) / 1000);
+    console.log(`✓ ${game} done in ${seconds}s`);
+    report('notice', game, `Saved ${result?.sets ?? '?'} sets and ${result?.cards ?? '?'} cards in ${seconds}s`);
   } catch (error) {
     failures += 1;
-    console.error(`✗ ${game} failed: ${error instanceof Error ? error.message : error}`);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`✗ ${game} failed: ${message}`);
+    report('error', game, message);
   }
 }
 process.exit(failures > 0 ? 1 : 0);
