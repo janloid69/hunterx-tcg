@@ -55,14 +55,17 @@ the code. They go only where these steps say.
 5. Authentication → **URL Configuration**: set **Site URL** to your website address (your Netlify address
    from step 4, for now `http://localhost:8081`). Under **Redirect URLs**, add both `http://localhost:8081`
    and your Netlify address.
-6. **Deploy the role-sync function.** On a computer with Node.js 22:
+6. **Deploy the role-sync function** (no software needed):
+   1. Edge Functions → **Deploy a new function** → **Via Editor**. Name it exactly `discord-sync`.
+   2. Replace the sample code with the whole of `supabase/functions/discord-sync/index.ts` and click **Deploy**.
+   3. Open the function's **Details** and turn **Verify JWT** off, then save. (The function checks the
+      member's sign-in itself.)
+   4. Edge Functions → **Secrets**: add `DISCORD_GUILD_ID`, `DISCORD_CIRCLE_ROLE_ID` and
+      `DISCORD_MOD_ROLE_ID` with the IDs from step 1.
 
-   ```bash
-   npx supabase login
-   npx supabase link --project-ref <your-project-ref>
-   npx supabase functions deploy discord-sync
-   npx supabase secrets set DISCORD_GUILD_ID=<server id> DISCORD_CIRCLE_ROLE_ID=<role id> DISCORD_MOD_ROLE_ID=<mod role id>
-   ```
+   Or with the CLI, on a computer with Node.js 22: `npx supabase login`, then
+   `npx supabase functions deploy discord-sync --project-ref <your-project-ref> --no-verify-jwt`, then
+   `npx supabase secrets set DISCORD_GUILD_ID=… DISCORD_CIRCLE_ROLE_ID=… DISCORD_MOD_ROLE_ID=…`.
 
 7. From **Project Settings → API**, note the **Project URL**, the **anon / publishable key** (safe to share)
    and the **service_role / secret key** (keep private).
@@ -80,10 +83,8 @@ the code. They go only where these steps say.
 
 1. At <https://app.netlify.com>, choose **Add new site → Import an existing project** and pick this repo.
    The build settings come from `netlify.toml`.
-2. Under **Site configuration → Environment variables**, add:
-   - `EXPO_PUBLIC_SUPABASE_URL` — the Project URL
-   - `EXPO_PUBLIC_SUPABASE_ANON_KEY` — the anon / publishable key
-   - `EXPO_PUBLIC_DISCORD_INVITE_URL` — `https://discord.gg/R4MvMDex8a`
+2. No settings to add: the website's public Supabase address and key are in `app/.env.production`.
+   (If you ever move to a new Supabase project, update that file.)
 3. Deploy. Add the Netlify address (for example `https://hunterx-tcg.netlify.app`) to Supabase's
    Site URL and Redirect URLs (step 2.5). A custom domain can come later.
 

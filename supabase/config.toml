@@ -1,0 +1,7 @@
+# Settings the Supabase CLI uses when deploying from this repo.
+project_id = "czqillqyyqhdgjqozwqm"
+
+[functions.discord-sync]
+# The function checks the member's session itself (see index.ts), so the
+# gateway check is off. This is required with Supabase's new API keys.
+verify_jwt = false

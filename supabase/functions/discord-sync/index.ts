@@ -53,13 +53,12 @@ Deno.serve(async (req) => {
     const circleRoleId = requireEnv('DISCORD_CIRCLE_ROLE_ID');
     const modRoleId = Deno.env.get('DISCORD_MOD_ROLE_ID') ?? '';
 
-    // 1. Who is calling? Verify their Supabase session.
-    const authHeader = req.headers.get('Authorization') ?? '';
-    const asCaller = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false },
-    });
-    const { data: userData, error: userError } = await asCaller.auth.getUser();
+    // 1. Who is calling? Verify their Supabase session token. The function is
+    //    deployed with JWT checks off at the gateway, so this check is the gate.
+    const accessToken = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+    if (!accessToken) return json({ error: 'Not signed in' }, 401);
+    const asCaller = createClient(supabaseUrl, anonKey, { auth: { persistSession: false } });
+    const { data: userData, error: userError } = await asCaller.auth.getUser(accessToken);
     if (userError || !userData.user) return json({ error: 'Not signed in' }, 401);
     const user = userData.user;
 
