@@ -53,18 +53,25 @@ test('Pokémon sets and cards', () => {
   assert.equal(cards[1].image_large, null);
 });
 
-test('Pokémon only refreshes new, changed or recent sets', () => {
-  const apiSets = fixture('pokemon-sets.json').data;
-  const today = new Date('2024-12-01');
-  const nothingKnown = setsNeedingCards(apiSets, new Map(), today);
-  assert.equal(nothingKnown.length, 2);
+test('Pokémon downloads sets that are missing cards, plus recent sets', () => {
+  const apiSets = fixture('pokemon-sets.json').data; // sv8 has 252 cards, base1 has 102
+  const later = new Date('2026-10-23');
 
-  const allKnown = new Map([['pokemon:sv8', 252], ['pokemon:base1', 102]]);
-  assert.deepEqual(setsNeedingCards(apiSets, allKnown, today).map((s) => s.id), ['sv8']);
-  assert.deepEqual(setsNeedingCards(apiSets, allKnown, new Date('2026-10-23')).map((s) => s.id), []);
+  assert.equal(setsNeedingCards(apiSets, new Map(), later).length, 2, 'nothing stored yet');
 
-  const changed = new Map([['pokemon:sv8', 252], ['pokemon:base1', 100]]);
-  assert.deepEqual(setsNeedingCards(apiSets, changed, new Date('2026-10-23')).map((s) => s.id), ['base1']);
+  const complete = new Map([['pokemon:sv8', 252], ['pokemon:base1', 102]]);
+  assert.deepEqual(setsNeedingCards(apiSets, complete, later).map((s) => s.id), []);
+  assert.deepEqual(
+    setsNeedingCards(apiSets, complete, new Date('2024-12-01')).map((s) => s.id),
+    ['sv8'],
+    'recent sets are refreshed even when complete',
+  );
+
+  const partial = new Map([['pokemon:sv8', 252], ['pokemon:base1', 40]]);
+  assert.deepEqual(setsNeedingCards(apiSets, partial, later).map((s) => s.id), ['base1'], 'a run that stopped partway is resumed');
+
+  const empty = new Map([['pokemon:sv8', 0], ['pokemon:base1', 102]]);
+  assert.deepEqual(setsNeedingCards(apiSets, empty, later).map((s) => s.id), ['sv8']);
 });
 
 test('One Piece cards, alternate arts and derived sets', () => {

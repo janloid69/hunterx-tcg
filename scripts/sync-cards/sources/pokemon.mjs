@@ -37,16 +37,35 @@ export function mapPokemonCard(card, now = new Date().toISOString()) {
   };
 }
 
-/** Sets that are new, changed size, or came out recently get their cards refreshed. */
-export function setsNeedingCards(apiSets, knownCounts, today = new Date()) {
+/**
+ * Sets whose cards still need downloading: any set where we have stored fewer
+ * cards than the set contains (new sets, or a run that stopped partway), plus
+ * recent sets, which still get new promos and corrections.
+ * `storedCounts` maps our set id ('pokemon:sv8') to cards actually stored.
+ */
+export function setsNeedingCards(apiSets, storedCounts, today = new Date()) {
   const recentCutoff = new Date(today.getTime() - 120 * 24 * 60 * 60 * 1000);
   return apiSets.filter((set) => {
-    const known = knownCounts.get(`pokemon:${set.id}`);
-    if (known === undefined || known === null) return true;
-    if (known !== (set.total ?? set.printedTotal)) return true;
+    const stored = storedCounts.get(`pokemon:${set.id}`) ?? 0;
+    const expected = set.total ?? set.printedTotal ?? 0;
+    if (stored === 0 || stored < expected) return true;
     const released = isoDate(set.releaseDate);
     return released !== null && new Date(released) >= recentCutoff;
   });
+}
+
+/** Counts the cards we already store for each set (fast: Supabase, not the card API). */
+async function storedCardCounts(db, apiSets) {
+  const counts = new Map();
+  const queue = apiSets.map((set) => `pokemon:${set.id}`);
+  const worker = async () => {
+    while (queue.length > 0) {
+      const id = queue.shift();
+      counts.set(id, (await db.count('cards', `set_id=eq.${encodeURIComponent(id)}`)) ?? 0);
+    }
+  };
+  await Promise.all(Array.from({ length: 8 }, worker));
+  return counts;
 }
 
 export async function syncPokemon(db, { apiKey, log = console.log } = {}) {
@@ -64,25 +83,33 @@ export async function syncPokemon(db, { apiKey, log = console.log } = {}) {
     apiSets.push(...body.data);
     if (apiSets.length >= body.totalCount || body.data.length === 0) break;
   }
-
-  const known = await db.select('card_sets', 'select=id,card_count&game_id=eq.pokemon');
-  const knownCounts = new Map(known.map((row) => [row.id, row.card_count]));
-  const toRefresh = setsNeedingCards(apiSets, knownCounts);
-  log(`Pokémon: ${apiSets.length} sets, refreshing cards for ${toRefresh.length}`);
-
   await db.upsert('card_sets', apiSets.map((set) => mapPokemonSet(set)));
 
+  const toRefresh = setsNeedingCards(apiSets, await storedCardCounts(db, apiSets));
+  log(`Pokémon: ${apiSets.length} sets, downloading cards for ${toRefresh.length}`);
+
+  // Each set is saved as soon as it downloads, and one failing set doesn't stop
+  // the rest. Anything missed is picked up again on the next run.
   let cardTotal = 0;
+  const failedSets = [];
   for (const set of toRefresh) {
-    const cards = [];
-    for (let page = 1; ; page += 1) {
-      const query = `q=set.id:${encodeURIComponent(set.id)}&page=${page}&pageSize=250&select=id,name,number,rarity,set,images`;
-      const body = await get(`${API}/cards?${query}`);
-      cards.push(...body.data);
-      if (cards.length >= body.totalCount || body.data.length === 0) break;
+    try {
+      const cards = [];
+      for (let page = 1; ; page += 1) {
+        const query = `q=set.id:${encodeURIComponent(set.id)}&page=${page}&pageSize=250&select=id,name,number,rarity,set,images`;
+        const body = await get(`${API}/cards?${query}`);
+        cards.push(...body.data);
+        if (cards.length >= body.totalCount || body.data.length === 0) break;
+      }
+      cardTotal += await db.upsert('cards', cards.map((card) => mapPokemonCard(card)));
+    } catch (error) {
+      failedSets.push(set.id);
+      log(`Pokémon: set ${set.id} failed: ${error instanceof Error ? error.message : error}`);
     }
-    cardTotal += await db.upsert('cards', cards.map((card) => mapPokemonCard(card)));
   }
-  log(`Pokémon: saved ${cardTotal} cards`);
-  return { sets: apiSets.length, cards: cardTotal };
+  log(`Pokémon: saved ${cardTotal} cards${failedSets.length ? `, ${failedSets.length} sets failed` : ''}`);
+  if (failedSets.length > 0 && failedSets.length === toRefresh.length) {
+    throw new Error(`Every Pokémon set failed to download (${failedSets.length} sets)`);
+  }
+  return { sets: apiSets.length, cards: cardTotal, failedSets };
 }

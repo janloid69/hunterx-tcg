@@ -52,6 +52,9 @@ for (const game of games) {
       `Saved ${result?.sets ?? '?'} sets and ${result?.cards ?? '?'} cards in ${seconds}s` +
         (totalCards === null ? '' : ` (${totalCards} ${game} cards in the database)`),
     );
+    if (result?.failedSets?.length) {
+      report('warning', game, `${result.failedSets.length} sets didn't download and will retry next run: ${result.failedSets.join(', ')}`);
+    }
   } catch (error) {
     failures += 1;
     const message = error instanceof Error ? error.message : String(error);
