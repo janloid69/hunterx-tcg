@@ -1,0 +1,27 @@
+{
+  "data": [
+    {
+      "id": "sv8-238",
+      "name": "Pikachu ex",
+      "number": "238",
+      "rarity": "Special Illustration Rare",
+      "set": { "id": "sv8", "name": "Surging Sparks" },
+      "images": {
+        "small": "https://images.pokemontcg.io/sv8/238.png",
+        "large": "https://images.pokemontcg.io/sv8/238_hires.png"
+      }
+    },
+    {
+      "id": "sv8-1",
+      "name": "Exeggcute",
+      "number": "1",
+      "rarity": "Common",
+      "set": { "id": "sv8", "name": "Surging Sparks" },
+      "images": { "small": "https://images.pokemontcg.io/sv8/1.png" }
+    }
+  ],
+  "page": 1,
+  "pageSize": 250,
+  "count": 2,
+  "totalCount": 2
+}

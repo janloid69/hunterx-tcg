@@ -1,0 +1,30 @@
+{
+  "items": [
+    {
+      "id": "c0000001-0000-4000-8000-000000000001",
+      "name": "Jinx, Loose Cannon",
+      "riftbound_id": "ogn-001-298",
+      "public_code": "OGN-001/298",
+      "collector_number": 1,
+      "classification": { "type": "Unit", "rarity": "Common", "domain": ["Fury"] },
+      "set": { "id": "6f1c2a40-0000-4000-8000-000000000001", "label": "Origins" },
+      "media": { "image_url": "https://cdn.example.com/ogn-001.png" },
+      "metadata": { "alternate_art": false, "overnumbered": false, "signature": false }
+    },
+    {
+      "id": "c0000002-0000-4000-8000-000000000002",
+      "name": "Jinx, Loose Cannon",
+      "riftbound_id": "ogn-001a-298",
+      "public_code": "OGN-001a/298",
+      "collector_number": 1,
+      "classification": { "rarity": "Epic" },
+      "set": { "set_id": "OGN", "label": "Origins" },
+      "media": { "image_url": "https://cdn.example.com/ogn-001a.png" },
+      "metadata": { "alternate_art": true, "overnumbered": false, "signature": false }
+    }
+  ],
+  "total": 2,
+  "page": 1,
+  "size": 100,
+  "pages": 1
+}

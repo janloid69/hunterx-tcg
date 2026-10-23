@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "HunterX TCG",
+    "slug": "hunterx-tcg",
+    "version": "0.1.0",
+    "scheme": "hunterx",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0E0E10",
+    "icon": "./assets/icon.png",
+    "ios": {
+      "bundleIdentifier": "ph.hunterx.tcg"
+    },
+    "android": {
+      "package": "ph.hunterx.tcg",
+      "adaptiveIcon": {
+        "backgroundColor": "#0E0E10",
+        "foregroundImage": "./assets/icon-foreground.png"
+      }
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

@@ -1,0 +1,36 @@
+[
+  {
+    "card_set_id": "OP01-001",
+    "card_name": "Roronoa Zoro",
+    "set_id": "OP-01",
+    "set_name": "Romance Dawn",
+    "rarity": "L",
+    "card_image_id": "OP01-001",
+    "card_image": "https://optcgapi.com/media/static/Card_Images/OP01-001.jpg"
+  },
+  {
+    "card_set_id": "OP01-001",
+    "card_name": "Roronoa Zoro",
+    "set_id": "OP-01",
+    "set_name": "Romance Dawn",
+    "rarity": "L",
+    "card_image_id": "OP01-001_p1",
+    "card_image": "https://optcgapi.com/media/static/Card_Images/OP01-001_p1.jpg"
+  },
+  {
+    "card_set_id": "OP01-120",
+    "card_name": "Shanks",
+    "set_id": "OP-01",
+    "set_name": "Romance Dawn",
+    "rarity": "SEC",
+    "card_image_id": "OP01-120",
+    "card_image": "https://optcgapi.com/media/static/Card_Images/OP01-120.jpg"
+  },
+  {
+    "card_set_id": "EB01-001",
+    "card_name": "Kouzuki Oden",
+    "set_name": "Memorial Collection [EB-01]",
+    "rarity": "L"
+  },
+  { "card_name": "Broken row without a code" }
+]

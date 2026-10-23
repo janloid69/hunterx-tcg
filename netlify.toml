@@ -1,0 +1,14 @@
+# Free hosting for the website on Netlify (see README, "Put the website online").
+[build]
+  base = "app"
+  command = "npx expo export --platform web"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# The website is a single-page app: every path loads index.html.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
