@@ -73,4 +73,6 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
         run: node --test scripts/sync-cards/test/*.test.mjs
       - name: Security and schema checks
-        run: psql -v ON_ERROR_STOP=1 -q -f supabase/tests/10_schema_test.sql
+        run: |
+          psql -v ON_ERROR_STOP=1 -q -f supabase/tests/10_schema_test.sql
+          psql -v ON_ERROR_STOP=1 -q -f supabase/tests/20_marketplace_test.sql

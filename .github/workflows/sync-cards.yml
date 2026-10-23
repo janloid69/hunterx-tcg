@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       games:
-        description: 'Games to sync (space separated: pokemon one-piece riftbound). Empty = all.'
+        description: 'Games to sync (space separated: pokemon one-piece riftbound). Empty = every game shown on the site.'
         required: false
         default: ''
 

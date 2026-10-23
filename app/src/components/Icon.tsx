@@ -20,7 +20,19 @@ export type IconName =
   | 'sparkle'
   | 'box'
   | 'logout'
-  | 'external';
+  | 'external'
+  | 'flag'
+  | 'block'
+  | 'more'
+  | 'send'
+  | 'star'
+  | 'camera'
+  | 'trash'
+  | 'edit'
+  | 'truck'
+  | 'pin'
+  | 'shield'
+  | 'cash';
 
 function shapes(name: IconName) {
   switch (name) {
@@ -119,6 +131,67 @@ function shapes(name: IconName) {
         <>
           <Path d="M14 4h6v6M20 4l-9 9" />
           <Path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />
+        </>
+      );
+    case 'flag':
+      return <Path d="M5 21V4M5 4h11l-2 4 2 4H5" />;
+    case 'block':
+      return (
+        <>
+          <Circle cx={12} cy={12} r={9} />
+          <Path d="M5.6 5.6l12.8 12.8" />
+        </>
+      );
+    case 'more':
+      return (
+        <>
+          <Circle cx={5} cy={12} r={1.2} />
+          <Circle cx={12} cy={12} r={1.2} />
+          <Circle cx={19} cy={12} r={1.2} />
+        </>
+      );
+    case 'send':
+      return <Path d="M4 12l16-8-6 16-2.5-6.5z M11.5 13.5L20 4" />;
+    case 'star':
+      return <Path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" />;
+    case 'camera':
+      return (
+        <>
+          <Path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
+          <Circle cx={12} cy={13.5} r={3.5} />
+        </>
+      );
+    case 'trash':
+      return <Path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />;
+    case 'edit':
+      return <Path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" />;
+    case 'truck':
+      return (
+        <>
+          <Path d="M3 6h11v10H3zM14 9h4l3 3v4h-7" />
+          <Circle cx={7} cy={18} r={2} />
+          <Circle cx={17} cy={18} r={2} />
+        </>
+      );
+    case 'pin':
+      return (
+        <>
+          <Path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z" />
+          <Circle cx={12} cy={9} r={2.5} />
+        </>
+      );
+    case 'shield':
+      return (
+        <>
+          <Path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z" />
+          <Path d="M9 12l2 2 4-4" />
+        </>
+      );
+    case 'cash':
+      return (
+        <>
+          <Rect x={3} y={6} width={18} height={12} rx={2} />
+          <Circle cx={12} cy={12} r={2.5} />
         </>
       );
   }

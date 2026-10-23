@@ -1,16 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { CardArt } from '@/components/CardArt';
 import { Icon, type IconName } from '@/components/Icon';
+import { ListingCard } from '@/components/ListingCard';
 import { Badge, Notice, ProgressBar, Screen, SectionHeader, Surface } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { getCollectionSummary, getRecentItems, getSetProgress } from '@/lib/data';
 import { greeting, percent, peso } from '@/lib/format';
+import { getListings } from '@/lib/market';
 import { discordInviteUrl } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import { useQuery } from '@/lib/useQuery';
@@ -45,6 +47,7 @@ export default function HomeScreen() {
   const summary = useQuery(getCollectionSummary, []);
   const recent = useQuery(() => getRecentItems(6), []);
   const progress = useQuery(getSetProgress, []);
+  const fresh = useQuery(() => getListings({ limit: 8 }), []);
 
   const name = profile?.display_name ?? profile?.username ?? 'Hunter';
   const isEmpty = summary.data !== undefined && summary.data.totalQuantity === 0;
@@ -124,6 +127,17 @@ export default function HomeScreen() {
           </Pressable>
         ))}
       </View>
+
+      {fresh.data && fresh.data.length > 0 ? (
+        <View style={styles.section}>
+          <SectionHeader title="Fresh listings" action={{ label: 'Market', onPress: () => router.push('/market') }} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.freshRow}>
+            {fresh.data.map((listing) => (
+              <ListingCard key={listing.id} listing={listing} width={150} />
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
 
       {isEmpty ? (
         <Surface style={{ gap: 12 }}>
@@ -247,6 +261,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   section: { gap: 12 },
+  freshRow: { gap: 14, paddingRight: 8 },
   listSurface: { padding: 0, overflow: 'hidden' },
   setRow: { paddingHorizontal: 16, paddingVertical: 14, gap: 8 },
   rowDivider: { borderTopWidth: 1, borderTopColor: colors.surface3 },

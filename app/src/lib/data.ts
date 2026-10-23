@@ -178,6 +178,26 @@ export async function searchCatalog(kind: 'toy' | 'sealed', term: string): Promi
   return (data ?? []) as CatalogItem[];
 }
 
+export async function getCard(id: string): Promise<CardWithSet | null> {
+  const { data, error } = await supabase
+    .from('cards')
+    .select('id, game_id, set_id, number, name, rarity, image_small, image_large, set:card_sets ( name, code )')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as unknown as CardWithSet | null) ?? null;
+}
+
+export async function getCatalogItem(id: string): Promise<CatalogItem | null> {
+  const { data, error } = await supabase
+    .from('catalog_items')
+    .select('id, game_id, kind, name, brand, line, image_url, status')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as CatalogItem | null) ?? null;
+}
+
 export async function createCatalogItem(input: {
   kind: 'toy' | 'sealed';
   gameId: string;

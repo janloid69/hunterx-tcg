@@ -36,4 +36,5 @@ for mode in strict exposed; do
   fi
 
   run "hx_$mode" -f "$here/10_schema_test.sql"
+  run "hx_$mode" -f "$here/20_marketplace_test.sql"
 done

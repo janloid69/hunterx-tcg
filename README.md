@@ -3,7 +3,8 @@
 A free website (and later, iPhone and Android apps) where Filipino collectors track
 their cards and collectibles in pesos and trade with members of the HunterX Discord.
 
-This is **Phase 1: foundations** — Discord sign-in, the card database, and the binder.
+Done so far: **Phase 1** (Discord sign-in, card database, binder) and **Phase 3, part 1** (the marketplace:
+listings, on-site messages and offers, vouches, reports and blocks, account deletion).
 
 ## What's in this repo
 
@@ -24,7 +25,15 @@ This is **Phase 1: foundations** — Discord sign-in, the card database, and the
 - **Binder:** set progress for every set you own cards from, filtered by game, plus your toys and sealed products.
 - **Set pages:** every card in the set, with owned cards and dashed slots for missing ones. Tap a card to add a copy, change the count, or remove it.
 - **Add:** search cards by name or number (`238/191`, `OP01-001`), pick raw or graded, condition, quantity and price paid. Toys and sealed products come from a shared catalog that members add to and mods approve.
-- Scan, Market and Community pages are placeholders for later phases.
+- **Market:** browse and search listings by game and price. Discord members sell with photos, price, condition,
+  meetup or shipping and payment methods, or straight from a card in their binder.
+- **Messages:** any signed-in member can chat with a seller on the site (no need to join the Discord). Buyers make
+  offers; sellers accept or decline. Live updates, unread counts, safety tips in every chat.
+- **Trust:** mark sold (to a member who messaged you), vouches both ways after a sale, member profiles with
+  ratings, report a listing, member or message, block, and a Reports page for mods. Three reports from different
+  members hide a listing until a mod reviews it.
+- **Delete account** from Profile (removes photos, then everything tied to the account).
+- Scan and the peso price guide come next. Final sale prices are already being recorded for it.
 
 ---
 
@@ -46,8 +55,10 @@ the code. They go only where these steps say.
 ### 2. Set up Supabase
 
 1. Create a project at <https://supabase.com> (the free plan is enough). Pick the Singapore region for the Philippines.
-2. **Create the database:** open **SQL Editor**, paste the whole of
-   `supabase/migrations/20261023000000_init.sql`, and click **Run**.
+2. **Create the database:** open **SQL Editor**, and run each file in `supabase/migrations/` in order, in a new
+   query each time: first `20261023000000_init.sql`, then `20261024000000_marketplace.sql`. Each should say
+   "Success. No rows returned". The marketplace file also creates the `listing-photos` storage bucket and turns
+   on live chat updates.
 3. **Turn on Discord sign-in:** Authentication → Providers (Sign In / Providers) → **Discord**. Turn it on and paste the
    Client ID and Client Secret from step 1. Copy the **Callback URL** shown there
    (it looks like `https://<project-ref>.supabase.co/auth/v1/callback`).

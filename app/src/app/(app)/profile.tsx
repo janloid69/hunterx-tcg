@@ -1,18 +1,42 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
-import { Icon } from '@/components/Icon';
-import { Badge, Notice, Screen, Surface } from '@/components/ui';
+import { Icon, type IconName } from '@/components/Icon';
+import { ConfirmSheet } from '@/components/Sheet';
+import { Badge, Notice, Screen, SectionHeader, Surface, TextField } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { deleteMyAccount, getMyBlocks, unblockMember } from '@/lib/market';
+import { errorMessage } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
+import { useQuery } from '@/lib/useQuery';
 
 export default function ProfileScreen() {
   const { profile, session, roleSyncError, signOut } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [typed, setTyped] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const blocks = useQuery(getMyBlocks, []);
 
   const synced = profile?.roles_synced_at ? new Date(profile.roles_synced_at) : null;
+  const me = session?.user.id;
+
+  async function deleteAccount() {
+    setDeleting(true);
+    setError(null);
+    try {
+      await deleteMyAccount();
+    } catch (cause) {
+      setError(errorMessage(cause));
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  }
 
   return (
     <Screen>
@@ -42,6 +66,14 @@ export default function ProfileScreen() {
       {roleSyncError ? (
         <Notice tone="error">{`We couldn't read your Discord roles: ${roleSyncError}`}</Notice>
       ) : null}
+      {error ? <Notice tone="error">{error}</Notice> : null}
+
+      <Surface style={styles.links}>
+        {me ? <LinkRow icon="user" label="View your public profile" onPress={() => router.push({ pathname: '/u/[id]', params: { id: me } })} /> : null}
+        <LinkRow icon="tag" label="My listings" onPress={() => router.push('/market/mine')} />
+        <LinkRow icon="chat" label="Messages" onPress={() => router.push('/messages')} />
+        {profile?.is_mod ? <LinkRow icon="shield" label="Reports (mods)" onPress={() => router.push('/mod')} /> : null}
+      </Surface>
 
       <Surface style={{ gap: 8 }}>
         <AppText variant="bodyStrong">Discord roles</AppText>
@@ -55,9 +87,32 @@ export default function ProfileScreen() {
         </AppText>
       </Surface>
 
-      {session?.user.email ? (
-        <AppText variant="small">Signed in as {session.user.email}</AppText>
-      ) : null}
+      <View style={{ gap: 12 }}>
+        <SectionHeader title="Blocked members" />
+        {blocks.data && blocks.data.length === 0 ? <AppText variant="small">You haven’t blocked anyone.</AppText> : null}
+        {(blocks.data ?? []).length > 0 ? (
+          <Surface style={{ padding: 0, overflow: 'hidden' }}>
+            {(blocks.data ?? []).map((member, index) => (
+              <View key={member.id} style={[styles.blockRow, index > 0 ? styles.divider : null]}>
+                <Avatar uri={member.avatar_url} name={member.display_name} seed={member.id} size={32} />
+                <AppText variant="bodyStrong" style={{ flex: 1 }}>
+                  {member.display_name ?? member.username ?? 'Member'}
+                </AppText>
+                <Button
+                  label="Unblock"
+                  variant="outline"
+                  onPress={async () => {
+                    await unblockMember(member.id).catch((cause) => setError(errorMessage(cause)));
+                    blocks.reload();
+                  }}
+                />
+              </View>
+            ))}
+          </Surface>
+        ) : null}
+      </View>
+
+      {session?.user.email ? <AppText variant="small">Signed in as {session.user.email}</AppText> : null}
 
       <Button
         label="Sign out"
@@ -69,7 +124,46 @@ export default function ProfileScreen() {
           await signOut();
         }}
       />
+
+      <Surface style={{ gap: 10 }}>
+        <AppText variant="bodyStrong">Delete account</AppText>
+        <AppText variant="small">
+          Deletes your profile, binder, listings and photos, chats, vouches and blocks for good. Final sale prices stay in
+          the price guide without your name. Your Discord account isn’t affected.
+        </AppText>
+        <Button label="Delete my account" variant="danger" icon="trash" onPress={() => setConfirmDelete(true)} />
+      </Surface>
+
+      <ConfirmSheet
+        visible={confirmDelete}
+        title="Delete your HunterX account?"
+        message="This can't be undone. Type DELETE to confirm."
+        confirmLabel={typed.trim().toUpperCase() === 'DELETE' ? 'Delete everything' : 'Type DELETE first'}
+        danger
+        busy={deleting}
+        onClose={() => {
+          setConfirmDelete(false);
+          setTyped('');
+        }}
+        onConfirm={() => {
+          if (typed.trim().toUpperCase() === 'DELETE') deleteAccount();
+        }}
+      >
+        <TextField label="Type DELETE" value={typed} onChangeText={setTyped} autoCapitalize="characters" />
+      </ConfirmSheet>
     </Screen>
+  );
+}
+
+function LinkRow({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="link" onPress={onPress} style={({ pressed }) => [styles.linkRow, pressed ? { opacity: 0.8 } : null]}>
+      <Icon name={icon} size={20} color={colors.text} />
+      <AppText variant="bodyStrong" style={{ flex: 1 }}>
+        {label}
+      </AppText>
+      <Icon name="chevronRight" size={18} color={colors.textFaint} strokeWidth={2} />
+    </Pressable>
   );
 }
 
@@ -88,4 +182,8 @@ const styles = StyleSheet.create({
   },
   avatarImage: { width: 60, height: 60, borderRadius: 30 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  links: { paddingVertical: 4 },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 },
+  blockRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10 },
+  divider: { borderTopWidth: 1, borderTopColor: colors.surface3 },
 });

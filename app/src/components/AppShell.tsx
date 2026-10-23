@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/auth';
 import { colors, fonts, maxContentWidth, wideBreakpoint } from '@/lib/theme';
+import { useUnreadCount } from '@/lib/useUnread';
 
 import { AppText } from './AppText';
 import { Icon, type IconName } from './Icon';
@@ -83,6 +84,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </Pressable>
               </Link>
             ) : null}
+            <MessagesButton />
             <Link href="/add" asChild>
               <Pressable accessibilityRole="link" accessibilityLabel="Add to binder" style={styles.iconButton}>
                 <Icon name="plus" size={24} color={colors.accent} strokeWidth={2} />
@@ -134,6 +136,28 @@ export function AppShell({ children }: { children: ReactNode }) {
         </View>
       )}
     </View>
+  );
+}
+
+function MessagesButton() {
+  const unread = useUnreadCount();
+  return (
+    <Link href="/messages" asChild>
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={unread > 0 ? `Messages, ${unread} unread` : 'Messages'}
+        style={styles.iconButton}
+      >
+        <Icon name="chat" size={23} color={colors.text} />
+        {unread > 0 ? (
+          <View style={styles.unreadBadge}>
+            <AppText variant="smallStrong" color={colors.onAccent} style={{ fontSize: 10, lineHeight: 14 }}>
+              {unread > 9 ? '9+' : unread}
+            </AppText>
+          </View>
+        ) : null}
+      </Pressable>
+    </Link>
   );
 }
 
@@ -190,6 +214,20 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   iconButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  unreadBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.bg,
+  },
   avatarRing: {
     width: 34,
     height: 34,

@@ -269,6 +269,19 @@ function CardSheet({
                     </Pressable>
                   </View>
                 ))}
+                <Button
+                  label="Sell this card"
+                  variant="outline"
+                  icon="tag"
+                  onPress={() => {
+                    const copy = copies.find((c) => c.kind === 'card') ?? copies[0];
+                    onClose();
+                    router.push({
+                      pathname: '/market/new',
+                      params: { cardId: card.id, condition: copy?.condition ?? 'NM' },
+                    });
+                  }}
+                />
               </View>
             ) : null}
 
