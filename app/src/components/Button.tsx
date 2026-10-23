@@ -1,9 +1,7 @@
-import { forwardRef } from 'react';
 import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
-  View,
   type GestureResponderEvent,
   type StyleProp,
   type ViewStyle,
@@ -37,25 +35,21 @@ const variantStyles: Record<Variant, { bg: string; fg: string; border: string }>
 };
 
 /** A real button: reachable by keyboard and screen readers, 44px or taller. */
-export const Button = forwardRef<View, ButtonProps>(function Button(
-  {
-    label,
-    onPress,
-    variant = 'primary',
-    icon,
-    disabled = false,
-    loading = false,
-    size = 'md',
-    accessibilityLabel,
-    style,
-  },
-  ref,
-) {
+export function Button({
+  label,
+  onPress,
+  variant = 'primary',
+  icon,
+  disabled = false,
+  loading = false,
+  size = 'md',
+  accessibilityLabel,
+  style,
+}: ButtonProps) {
   const look = variantStyles[variant];
   const inactive = disabled || loading;
   return (
     <Pressable
-      ref={ref}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: inactive, busy: loading }}
@@ -82,7 +76,7 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
       )}
     </Pressable>
   );
-});
+}
 
 const styles = StyleSheet.create({
   base: {

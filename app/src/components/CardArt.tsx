@@ -22,12 +22,14 @@ export function CardArt({ gameId, imageUrl, width, height, dimmed = false, style
 
   if (imageUrl) {
     return (
-      <Image
-        source={{ uri: imageUrl }}
-        accessibilityIgnoresInvertColors
-        resizeMode="cover"
-        style={[{ width, height: h, borderRadius: radius, opacity: dimmed ? 0.35 : 1 }, style]}
-      />
+      <View style={[{ width, height: h, opacity: dimmed ? 0.35 : 1 }, style]}>
+        <Image
+          source={{ uri: imageUrl }}
+          accessibilityIgnoresInvertColors
+          resizeMode="cover"
+          style={{ width, height: h, borderRadius: radius }}
+        />
+      </View>
     );
   }
 

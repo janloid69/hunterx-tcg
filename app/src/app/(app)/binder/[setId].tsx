@@ -132,7 +132,7 @@ export default function SetScreen() {
           </View>
         }
         ListEmptyComponent={
-          loading ? null : (
+          loading ? undefined : (
             <AppText variant="small" style={{ paddingVertical: 12 }}>
               {filter === 'missing' ? 'Nothing missing. Set complete!' : 'No cards to show.'}
             </AppText>
