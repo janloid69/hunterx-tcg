@@ -1,4 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -13,6 +15,23 @@ import { discordInviteUrl } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import { useQuery } from '@/lib/useQuery';
 
+// Remembered on this device only; members can always join from Community.
+const HIDE_JOIN_KEY = 'hx:hide-join-discord';
+
+function useJoinNoticeHidden(): [boolean, () => void] {
+  const [hidden, setHidden] = useState(true);
+  useEffect(() => {
+    AsyncStorage.getItem(HIDE_JOIN_KEY)
+      .then((value) => setHidden(value === '1'))
+      .catch(() => setHidden(false));
+  }, []);
+  const hide = () => {
+    setHidden(true);
+    AsyncStorage.setItem(HIDE_JOIN_KEY, '1').catch(() => {});
+  };
+  return [hidden, hide];
+}
+
 const QUICK_ACTIONS: { label: string; icon: IconName; href: '/add' | '/scan' | '/binder' | '/market' }[] = [
   { label: 'Add', icon: 'plus', href: '/add' },
   { label: 'Scan', icon: 'scan', href: '/scan' },
@@ -22,6 +41,7 @@ const QUICK_ACTIONS: { label: string; icon: IconName; href: '/add' | '/scan' | '
 
 export default function HomeScreen() {
   const { profile, roleSyncError } = useAuth();
+  const [joinHidden, hideJoin] = useJoinNoticeHidden();
   const summary = useQuery(getCollectionSummary, []);
   const recent = useQuery(() => getRecentItems(6), []);
   const progress = useQuery(getSetProgress, []);
@@ -45,9 +65,21 @@ export default function HomeScreen() {
         <Notice tone="error">{`We couldn't read your Discord roles: ${roleSyncError}`}</Notice>
       ) : null}
 
-      {profile && !profile.in_guild ? (
+      {profile && !profile.in_guild && !joinHidden ? (
         <Notice tone="discord">
-          <AppText variant="bodyStrong">Join the HunterX Discord to sell</AppText>
+          <View style={styles.noticeTop}>
+            <AppText variant="bodyStrong" style={{ flex: 1 }}>
+              Join the HunterX Discord to sell
+            </AppText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Hide this message"
+              onPress={hideJoin}
+              style={styles.noticeClose}
+            >
+              <Icon name="close" size={18} color={colors.discordText} strokeWidth={2} />
+            </Pressable>
+          </View>
           <AppText variant="small" color={colors.discordText}>
             Anyone can track a binder. Selling is for HunterX Discord members, so every seller is
             someone the mods know.
@@ -182,6 +214,8 @@ function Stat({ value, label }: { value: number | undefined; label: string }) {
 
 const styles = StyleSheet.create({
   greeting: { gap: 8 },
+  noticeTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: -10, marginRight: -10 },
+  noticeClose: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   badges: { flexDirection: 'row', gap: 6 },
   summary: { gap: 6 },
   statRow: {
