@@ -121,6 +121,9 @@ supabase/tests/run_local.sh
   `scripts/sync-cards/sources/` are written to be easy to adjust.
 - **Yu-Gi-Oh!, Gundam and Final Fantasy** are in the database but switched off (`games.enabled = false`)
   until their card data is added.
+- **Hiding a game also pauses its nightly sync.** For example, Riftbound is hidden while its card source
+  (Riftcodex) blocks GitHub's servers. To bring it back, run
+  `update public.games set enabled = true where id = 'riftbound';` in Supabase's SQL Editor.
 - **Prices:** peso values come with the price guide in Phase 2. For now the site shows what members
   paid.
 

@@ -3,8 +3,10 @@
 //
 //   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/sync-cards/index.mjs [game...]
 //
-// Games: pokemon, one-piece, riftbound (default: all). Runs nightly from
-// .github/workflows/sync-cards.yml. One failing source doesn't stop the others.
+// Games: pokemon, one-piece, riftbound. With no games named, it syncs the games
+// switched on in the games table (games.enabled), so hiding a game on the site
+// also pauses its sync. Runs nightly from .github/workflows/sync-cards.yml.
+// One failing source doesn't stop the others.
 
 import { createDb } from './lib.mjs';
 import { syncOnePiece } from './sources/one-piece.mjs';
@@ -26,8 +28,7 @@ function report(level, game, message) {
 }
 
 const requested = process.argv.slice(2);
-const games = requested.length > 0 ? requested : Object.keys(SOURCES);
-const unknown = games.filter((game) => !(game in SOURCES));
+const unknown = requested.filter((game) => !(game in SOURCES));
 if (unknown.length > 0) {
   console.error(`Unknown game(s): ${unknown.join(', ')}. Use: ${Object.keys(SOURCES).join(', ')}`);
   process.exit(2);
@@ -37,6 +38,17 @@ const db = createDb({
   url: process.env.SUPABASE_URL,
   serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 });
+
+let games = requested;
+if (games.length === 0) {
+  const enabled = new Set((await db.select('games', 'select=id&enabled=eq.true')).map((row) => row.id));
+  games = Object.keys(SOURCES).filter((game) => enabled.has(game));
+  const paused = Object.keys(SOURCES).filter((game) => !enabled.has(game));
+  if (paused.length > 0) {
+    console.log(`Skipping games hidden on the site: ${paused.join(', ')}`);
+    report('notice', 'skipped', `Not syncing games hidden on the site: ${paused.join(', ')}`);
+  }
+}
 
 let failures = 0;
 for (const game of games) {
