@@ -13,10 +13,16 @@ export function createThrottle(ms) {
   };
 }
 
+// Card APIs see who is asking, so the sync names itself and how to reach us.
+export const USER_AGENT =
+  'HunterX-TCG-CardSync/1.0 (+https://hunterx-tcg.netlify.app; github.com/janloid69/hunterx-tcg)';
+
 /** GET a JSON URL, retrying on rate limits and server errors. */
 export async function getJson(url, { headers = {}, retries = 4 } = {}) {
   for (let attempt = 0; ; attempt += 1) {
-    const res = await fetch(url, { headers: { Accept: 'application/json', ...headers } });
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json', 'User-Agent': USER_AGENT, ...headers },
+    });
     if (res.ok) return res.json();
     const retriable = res.status === 429 || res.status >= 500;
     if (!retriable || attempt >= retries) {
@@ -43,6 +49,16 @@ export function createDb({ url, serviceKey }) {
       const res = await fetch(`${base}/${table}?${query}`, { headers });
       if (!res.ok) throw new Error(`select ${table} failed: ${res.status} ${await res.text()}`);
       return res.json();
+    },
+    /** Number of rows matching a PostgREST filter, e.g. count('cards', 'game_id=eq.pokemon'). */
+    async count(table, filter) {
+      const res = await fetch(`${base}/${table}?select=id&${filter}`, {
+        method: 'HEAD',
+        headers: { ...headers, Prefer: 'count=exact' },
+      });
+      if (!res.ok) throw new Error(`count ${table} failed: ${res.status}`);
+      const total = Number((res.headers.get('content-range') ?? '').split('/')[1]);
+      return Number.isFinite(total) ? total : null;
     },
     async upsert(table, rows, { batchSize = 500 } = {}) {
       for (let i = 0; i < rows.length; i += batchSize) {

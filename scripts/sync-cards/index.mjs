@@ -45,7 +45,13 @@ for (const game of games) {
     const result = await SOURCES[game](db);
     const seconds = Math.round((Date.now() - started) / 1000);
     console.log(`✓ ${game} done in ${seconds}s`);
-    report('notice', game, `Saved ${result?.sets ?? '?'} sets and ${result?.cards ?? '?'} cards in ${seconds}s`);
+    const totalCards = await db.count('cards', `game_id=eq.${game}`).catch(() => null);
+    report(
+      'notice',
+      game,
+      `Saved ${result?.sets ?? '?'} sets and ${result?.cards ?? '?'} cards in ${seconds}s` +
+        (totalCards === null ? '' : ` (${totalCards} ${game} cards in the database)`),
+    );
   } catch (error) {
     failures += 1;
     const message = error instanceof Error ? error.message : String(error);
