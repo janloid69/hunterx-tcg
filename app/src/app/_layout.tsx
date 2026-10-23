@@ -7,13 +7,45 @@ import {
   Archivo_800ExtraBold,
 } from '@expo-google-fonts/archivo';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { colors } from '@/lib/theme';
+
+/**
+ * Shown instead of a blank page if any screen crashes. The error text helps
+ * us fix it; members can retry or reload.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return (
+    <View style={styles.errorPage}>
+      <Text style={styles.errorTitle}>Something went wrong</Text>
+      <Text style={styles.errorBody}>
+        Please try again. If it keeps happening, send this message to a HunterX mod:
+      </Text>
+      <Text selectable style={styles.errorDetail}>
+        {error?.message || String(error)}
+      </Text>
+      <View style={styles.errorActions}>
+        <Pressable accessibilityRole="button" onPress={retry} style={[styles.errorButton, styles.errorPrimary]}>
+          <Text style={styles.errorPrimaryText}>Try again</Text>
+        </Pressable>
+        {Platform.OS === 'web' ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => window.location.assign('/')}
+            style={[styles.errorButton, styles.errorOutline]}
+          >
+            <Text style={styles.errorOutlineText}>Go to Home</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -62,4 +94,39 @@ function Loading() {
 
 const styles = StyleSheet.create({
   loading: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
+  errorPage: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    gap: 14,
+  },
+  errorTitle: { color: colors.text, fontSize: 24, fontWeight: '800', textAlign: 'center' },
+  errorBody: { color: colors.textMuted, fontSize: 15, lineHeight: 22, textAlign: 'center', maxWidth: 460 },
+  errorDetail: {
+    color: colors.down,
+    fontSize: 13,
+    lineHeight: 19,
+    fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    maxWidth: 560,
+  },
+  errorActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
+  errorButton: {
+    minHeight: 44,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  errorPrimary: { backgroundColor: colors.accent, borderColor: colors.accent },
+  errorPrimaryText: { color: colors.onAccent, fontSize: 15, fontWeight: '700' },
+  errorOutline: { backgroundColor: 'transparent', borderColor: colors.borderStrong },
+  errorOutlineText: { color: colors.text, fontSize: 15, fontWeight: '700' },
 });
