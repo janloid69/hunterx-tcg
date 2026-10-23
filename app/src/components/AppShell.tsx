@@ -51,10 +51,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 const active = item.isActive(pathname);
                 return (
                   <Link key={item.href} href={item.href} asChild>
+                    {/* Link with asChild passes style straight to the browser on the web,
+                        so it must be one flat object, never an array. */}
                     <Pressable
                       accessibilityRole="link"
                       accessibilityState={{ selected: active }}
-                      style={[styles.topLink, active ? styles.topLinkActive : null]}
+                      style={active ? styles.topLinkActive : styles.topLink}
                     >
                       <AppText
                         variant="bodyStrong"
@@ -169,7 +171,13 @@ const styles = StyleSheet.create({
   headerWide: { paddingHorizontal: 24, paddingVertical: 12 },
   topNav: { flexDirection: 'row', gap: 4, flex: 1, marginLeft: 16 },
   topLink: { minHeight: 44, paddingHorizontal: 14, borderRadius: 10, justifyContent: 'center' },
-  topLinkActive: { backgroundColor: colors.surface2 },
+  topLinkActive: {
+    minHeight: 44,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    justifyContent: 'center',
+    backgroundColor: colors.surface2,
+  },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   scanPill: {
     minHeight: 44,
