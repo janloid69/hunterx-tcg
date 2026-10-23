@@ -29,7 +29,7 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
         run: npx expo export --platform web
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: website
           path: app/dist
@@ -37,6 +37,10 @@ jobs:
 
   database:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Supabase's "Automatically expose new tables" setting: both must pass.
+        expose_new_tables: [false, true]
     services:
       postgres:
         image: postgres:17
@@ -60,6 +64,9 @@ jobs:
       - name: Apply migration
         run: |
           psql -v ON_ERROR_STOP=1 -q -f supabase/tests/00_stub_supabase.sql
+          if [ "${{ matrix.expose_new_tables }}" = "true" ]; then
+            psql -v ON_ERROR_STOP=1 -q -f supabase/tests/01_expose_new_tables.sql
+          fi
           for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -q -f "$f"; done
       - name: Card sync rows fit the schema
         env:

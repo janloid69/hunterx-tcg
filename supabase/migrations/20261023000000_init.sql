@@ -257,4 +257,27 @@ create policy "Members remove from their own binder"
   on public.collection_items for delete to authenticated
   using (user_id = (select auth.uid()));
 
+-- ---------------------------------------------------------------------------
+-- Table access for the website (least privilege)
+--
+-- Start from nothing, then grant only what the site uses. This works the same
+-- whether or not the project has "Automatically expose new tables" turned on.
+-- Row-level security above still decides which rows each member can touch.
+-- ---------------------------------------------------------------------------
+
+revoke all on
+  public.profiles, public.games, public.card_sets, public.cards,
+  public.catalog_items, public.collection_items, public.my_set_progress
+from anon, authenticated;
+
+grant select on public.games, public.card_sets, public.cards to anon, authenticated;
+grant select on public.profiles to authenticated;
+grant select, insert on public.catalog_items to authenticated;
+grant select, insert, update, delete on public.collection_items to authenticated;
 grant select on public.my_set_progress to authenticated;
+
+-- The card sync and the discord-sync function use the service role.
+grant all on
+  public.profiles, public.games, public.card_sets, public.cards,
+  public.catalog_items, public.collection_items, public.my_set_progress
+to service_role;

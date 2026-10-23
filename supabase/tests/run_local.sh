@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Runs the schema checks against a throwaway local Postgres server.
+# Runs the schema checks against a throwaway local Postgres server, twice:
+# once like a Supabase project with "Automatically expose new tables" off,
+# and once with it on. Both must pass.
 # Usage: supabase/tests/run_local.sh   (needs Postgres 15+ binaries on PATH or in /usr/lib/postgresql)
 set -euo pipefail
 
@@ -16,17 +18,22 @@ trap cleanup EXIT
 initdb -D "$data" -U postgres --auth=trust >/dev/null
 pg_ctl -D "$data" -o "-p $port -k $data" -l "$data/log" start >/dev/null
 
-run() { psql -h "$data" -p "$port" -U postgres -d postgres -v ON_ERROR_STOP=1 -q "$@"; }
+run() { local db="$1"; shift; psql -h "$data" -p "$port" -U postgres -d "$db" -v ON_ERROR_STOP=1 -q "$@"; }
 
-run -f "$here/00_stub_supabase.sql"
-for migration in "$root"/supabase/migrations/*.sql; do
-  run -f "$migration"
+for mode in strict exposed; do
+  echo "== Checks with 'Automatically expose new tables' $([ "$mode" = exposed ] && echo on || echo off)"
+  createdb -h "$data" -p "$port" -U postgres "hx_$mode"
+  run "hx_$mode" -f "$here/00_stub_supabase.sql"
+  if [ "$mode" = exposed ]; then run "hx_$mode" -f "$here/01_expose_new_tables.sql"; fi
+  for migration in "$root"/supabase/migrations/*.sql; do
+    run "hx_$mode" -f "$migration"
+  done
+
+  # Card sync rows must fit the tables (runs in a transaction that rolls back).
+  if command -v node >/dev/null 2>&1; then
+    DATABASE_URL="postgresql://postgres@localhost:$port/hx_$mode?host=$data" \
+      node --test "$root"/scripts/sync-cards/test/*.test.mjs
+  fi
+
+  run "hx_$mode" -f "$here/10_schema_test.sql"
 done
-
-# Card sync rows must fit the tables (runs in a transaction that rolls back).
-if command -v node >/dev/null 2>&1; then
-  DATABASE_URL="postgresql://postgres@localhost:$port/postgres?host=$data" \
-    node --test "$root"/scripts/sync-cards/test/*.test.mjs
-fi
-
-run -f "$here/10_schema_test.sql"

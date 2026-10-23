@@ -73,10 +73,20 @@ begin
   end if;
 
   -- Members cannot give themselves the Verified Seller badge
-  update public.profiles set is_verified_seller = true
-  where id = '11111111-1111-1111-1111-111111111111';
-  get diagnostics changed = row_count;
-  if changed <> 0 then raise exception 'members must not be able to edit profile badges'; end if;
+  begin
+    update public.profiles set is_verified_seller = true
+    where id = '11111111-1111-1111-1111-111111111111';
+    get diagnostics changed = row_count;
+    if changed <> 0 then raise exception 'members must not be able to edit profile badges'; end if;
+  exception when insufficient_privilege then null;
+  end;
+
+  -- ...or create a second profile for themselves
+  begin
+    insert into public.profiles (id, is_verified_seller) values (gen_random_uuid(), true);
+    raise exception 'members must not be able to insert profiles';
+  exception when insufficient_privilege then null;
+  end;
 
   -- A graded slab needs a grader and a grade
   begin
@@ -91,6 +101,14 @@ begin
     values ('33333333-3333-3333-3333-333333333333', 'card', 1);
     raise exception 'card entry pointing at a catalog item was accepted';
   exception when check_violation then null;
+  end;
+
+  -- Members cannot change the card database
+  begin
+    update public.cards set name = 'Hacked' where id = 'pokemon:sv8-1';
+    get diagnostics changed = row_count;
+    if changed <> 0 then raise exception 'members must not be able to edit cards'; end if;
+  exception when insufficient_privilege then null;
   end;
 
   -- Members cannot approve their own catalog suggestions
@@ -146,10 +164,35 @@ set role anon;
 select set_config('request.jwt.claim.sub', '', false) as _jwt_sub \gset
 
 do $$
+declare seen integer;
 begin
   if (select count(*) from public.cards) <> 5 then raise exception 'visitors should be able to read cards'; end if;
-  if (select count(*) from public.collection_items) <> 0 then raise exception 'visitors can see binders'; end if;
-  if (select count(*) from public.profiles) <> 0 then raise exception 'visitors can see profiles'; end if;
+
+  begin
+    select count(*) into seen from public.collection_items;
+    if seen <> 0 then raise exception 'visitors can see binders'; end if;
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    select count(*) into seen from public.profiles;
+    if seen <> 0 then raise exception 'visitors can see profiles'; end if;
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    insert into public.collection_items (user_id, card_id, kind, quantity)
+    values ('11111111-1111-1111-1111-111111111111', 'pokemon:sv8-2', 'card', 1);
+    raise exception 'visitors can add to binders';
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    insert into public.cards (id, game_id, set_id, number, name, source)
+    values ('pokemon:fake', 'pokemon', 'pokemon:sv8', '999', 'Fake card', 'x');
+    raise exception 'visitors can add cards';
+  exception when insufficient_privilege then null;
+  end;
 end $$;
 
 reset role;
