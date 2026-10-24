@@ -9,7 +9,9 @@ import { CardArt } from '@/components/CardArt';
 import { CardScanner, type ScannerStatus } from '@/components/CardScanner';
 import { ChipRow } from '@/components/Chip';
 import { PriceLine } from '@/components/Prices';
+import { Icon } from '@/components/Icon';
 import { Notice, Screen, Surface, TextField } from '@/components/ui';
+import { addToCollection } from '@/lib/data';
 import { peso } from '@/lib/format';
 import { getCardPrices, type CardPrice } from '@/lib/prices';
 import { findCards } from '@/lib/scanLookup';
@@ -47,6 +49,7 @@ export default function ScanScreen() {
   const [typed, setTyped] = useState('');
   const [typedError, setTypedError] = useState<string | null>(null);
   const [finding, setFinding] = useState(false);
+  const [quickBusy, setQuickBusy] = useState(false);
   const busy = useRef(false);
   // The camera keeps reading while a card is showing; these decide when to switch.
   const lookups = useRef(new Map<string, { guess: ScanGuess | null; cards: CardWithSet[]; at: number }>());
@@ -161,11 +164,60 @@ export default function ScanScreen() {
     else setAddedCardId(selected.id);
   }
 
+  /** One tap from the bar over the camera: Near mint, one copy. */
+  async function quickAdd() {
+    if (!selected) return;
+    setQuickBusy(true);
+    try {
+      await addToCollection({ cardId: selected.id, kind: 'card', quantity: 1, condition: 'NM' });
+      onAdded({ quantity: 1 });
+    } catch (cause) {
+      setScannerNote(errorMessage(cause));
+    } finally {
+      setQuickBusy(false);
+    }
+  }
+
   const cameraHeight = wide ? 440 : Math.round(Math.min(Math.max(height * 0.48, 280), 460));
+
+  // On phones the full result is below the camera, so a bar over the camera
+  // shows the match and adds it in one tap, without scrolling.
+  const matchBar =
+    selected && !wide ? (
+      <View style={styles.matchBar}>
+        <CardArt gameId={selected.game_id} imageUrl={selected.image_small} width={38} height={53} />
+        <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
+          <AppText variant="bodyStrong" numberOfLines={1}>
+            {selected.name}
+          </AppText>
+          <AppText variant="small" numberOfLines={1}>
+            {[matchedNumber, selectedPrice?.value_php != null ? peso(selectedPrice.value_php) : null].filter(Boolean).join(' · ')}
+          </AppText>
+        </View>
+        {addedCardId === selected.id ? (
+          <View style={styles.addedPill}>
+            <Icon name="check" size={16} color={colors.up} strokeWidth={2.6} />
+            <AppText variant="smallStrong" color={colors.up}>
+              Added
+            </AppText>
+          </View>
+        ) : (
+          <Button label="Add" icon="plus" loading={quickBusy} onPress={quickAdd} />
+        )}
+      </View>
+    ) : null;
 
   const scanner = (
     <View style={{ gap: 8 }}>
-      <CardScanner enabled={focused} reading={focused} height={cameraHeight} onText={onText} onStatus={onStatus} />
+      <View>
+        <CardScanner enabled={focused} reading={focused} height={cameraHeight} onText={onText} onStatus={onStatus} />
+        {matchBar}
+      </View>
+      {selected && !wide && matches.length > 1 ? (
+        <AppText variant="small" style={{ textAlign: 'center' }}>
+          {matches.length} cards share this number. Scroll down to pick yours.
+        </AppText>
+      ) : null}
       {scannerNote ? <Notice tone="info">{scannerNote}</Notice> : null}
       {lastRead && matches.length === 0 ? (
         <AppText variant="small" style={{ textAlign: 'center' }}>
@@ -314,4 +366,19 @@ const styles = StyleSheet.create({
   choiceOn: { borderRadius: 10, borderWidth: 2, borderColor: colors.accent, padding: 2 },
   resultActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   typedRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  matchBar: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(14,14,16,0.94)',
+  },
+  addedPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, minHeight: 44 },
 });
