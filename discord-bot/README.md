@@ -22,7 +22,7 @@ It needs only Node.js 22. No `npm install`, no other packages.
 ### 1. Supabase
 
 1. **SQL Editor → New query**: paste `supabase/migrations/20261025000000_discord_bot.sql`, click **Run**.
-2. **Project Settings → API Keys → Secret keys → New secret key**, name it `discord-bot`, and copy it. It
+2. **Project Settings → API Keys → Secret keys → New secret key**, name it `discord_bot`, and copy it. It
    starts with `sb_secret_`. It goes only in the bot's `.env` file (step 4), never in a chat or on GitHub.
 
 ### 2. Discord Developer Portal
