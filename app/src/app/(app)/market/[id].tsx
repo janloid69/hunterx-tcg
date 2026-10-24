@@ -48,6 +48,11 @@ export default function ListingScreen() {
   const isBuyer = listing.data?.buyer_id === me;
   const showVouch = listing.data?.status === 'sold' && (isSeller ? !!listing.data.buyer_id : isBuyer);
   const myVouch = useQuery(() => (showVouch ? getMyVouch(id) : Promise.resolve(null)), [showVouch, id]);
+  // The seller card's sold count and vouches change along with the listing.
+  const refresh = () => {
+    listing.reload();
+    seller.reload();
+  };
 
   const [photoIndex, setPhotoIndex] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -177,10 +182,10 @@ export default function ListingScreen() {
               listing={item}
               busy={busy}
               onEdit={() => router.push({ pathname: '/market/new', params: { edit: item.id } })}
-              onReserve={() => run(async () => { await setListingStatus(item.id, item.status === 'reserved' ? 'active' : 'reserved'); listing.reload(); })}
+              onReserve={() => run(async () => { await setListingStatus(item.id, item.status === 'reserved' ? 'active' : 'reserved'); refresh(); })}
               onSold={() => setSheet('sold')}
               onRemove={() => setSheet('remove')}
-              onRelist={() => run(async () => { await setListingStatus(item.id, 'active'); listing.reload(); })}
+              onRelist={() => run(async () => { await setListingStatus(item.id, 'active'); refresh(); })}
             />
           ) : item.status === 'active' || item.status === 'reserved' ? (
             <View style={styles.buyActions}>
@@ -207,7 +212,7 @@ export default function ListingScreen() {
               label={item.hidden_at ? 'Restore listing (mod)' : 'Hide listing (mod)'}
               variant="outline"
               icon="shield"
-              onPress={() => run(async () => { await setListingHidden(item.id, !item.hidden_at); listing.reload(); })}
+              onPress={() => run(async () => { await setListingHidden(item.id, !item.hidden_at); refresh(); })}
             />
           ) : null}
         </View>
@@ -290,7 +295,7 @@ export default function ListingScreen() {
         onClose={() => setSheet(null)}
         onDone={() => {
           setSheet(null);
-          listing.reload();
+          refresh();
         }}
       />
       <ConfirmSheet
@@ -305,7 +310,7 @@ export default function ListingScreen() {
           run(async () => {
             await setListingStatus(item.id, 'removed');
             setSheet(null);
-            listing.reload();
+            refresh();
           })
         }
       />
@@ -323,6 +328,7 @@ export default function ListingScreen() {
         onDone={() => {
           setSheet(null);
           myVouch.reload();
+          seller.reload();
         }}
       />
     </Screen>
