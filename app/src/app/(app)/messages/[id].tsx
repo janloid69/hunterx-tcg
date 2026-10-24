@@ -199,7 +199,7 @@ export default function ChatScreen() {
         contentContainerStyle={styles.messages}
         onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
       >
-        <SafetyTips compact />
+        <SafetyTips compact role={isBuyer ? 'buyer' : 'seller'} />
         {!loaded ? <ActivityIndicator color={colors.accent} /> : null}
         {messages.map((message) => (
           <Bubble
@@ -339,7 +339,12 @@ function Bubble({
 
   if (message.kind === 'offer') {
     const status = message.offer_status ?? 'pending';
-    const statusLabel = { pending: 'Waiting for the seller', accepted: 'Accepted', declined: 'Declined', withdrawn: 'Withdrawn' }[status];
+    const statusLabel = {
+      pending: isSeller ? 'Waiting for your answer' : 'Waiting for the seller',
+      accepted: 'Accepted',
+      declined: 'Declined',
+      withdrawn: 'Withdrawn',
+    }[status];
     return (
       <Pressable
         onLongPress={mine ? undefined : onReport}

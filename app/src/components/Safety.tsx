@@ -12,16 +12,29 @@ import { Icon } from './Icon';
 import { Sheet } from './Sheet';
 import { Notice, TextField } from './ui';
 
+const SHARED_TIPS = [
+  'Keep the whole deal in this chat. Be careful if someone pushes you to rush or move to another app.',
+  'HunterX never asks for your password or a payment to “verify” your account.',
+];
+
+/** Tips for buyers first, then the ones everyone needs. */
 export const SAFETY_TIPS = [
   'Check the seller’s vouches and Verified Seller badge before paying.',
   'Meet in a busy public place, like a mall, and check the item before you pay.',
   'For shipping, ask for a photo or video of the item with your name and today’s date.',
-  'Keep the whole deal in this chat. Be careful if someone pushes you to pay fast or move to another app.',
-  'HunterX never asks for your password or a payment to “verify” your account.',
+  ...SHARED_TIPS,
 ];
 
-export function SafetyTips({ compact = false }: { compact?: boolean }) {
-  const tips = compact ? SAFETY_TIPS.slice(0, 3) : SAFETY_TIPS;
+export const SELLER_SAFETY_TIPS = [
+  'Wait until the money shows in your GCash, Maya or bank app. Payment screenshots can be faked.',
+  'Meet in a busy public place, like a mall, and count cash before you hand over the item.',
+  'For shipping, take a video while packing the item and keep the tracking number.',
+  ...SHARED_TIPS,
+];
+
+export function SafetyTips({ compact = false, role = 'buyer' }: { compact?: boolean; role?: 'buyer' | 'seller' }) {
+  const all = role === 'seller' ? SELLER_SAFETY_TIPS : SAFETY_TIPS;
+  const tips = compact ? all.slice(0, 3) : all;
   return (
     <View style={styles.tips} accessibilityRole="summary">
       <View style={styles.tipsTitle}>
