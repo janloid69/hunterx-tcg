@@ -92,5 +92,5 @@ export async function syncOnePiece(db, { log = console.log, withPrices = true } 
   const priced = cards.filter((card) => card.market_usd !== null).length;
   if (withPrices) log(`One Piece: ${priced} of ${cards.length} cards have a TCGplayer price`);
   log(`One Piece: saved ${sets.length} sets and ${cards.length} cards`);
-  return { sets: sets.length, cards: cards.length };
+  return { sets: sets.length, cards: cards.length, priced: withPrices ? priced : undefined };
 }

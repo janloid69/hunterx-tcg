@@ -119,6 +119,7 @@ export async function syncPokemon(db, { apiKey, log = console.log, fullRefresh =
   // Each set is saved as soon as it downloads, and one failing set doesn't stop
   // the rest. Anything missed is picked up again on the next run.
   let cardTotal = 0;
+  let priced = 0;
   const failedSets = [];
   for (const set of toRefresh) {
     try {
@@ -131,6 +132,7 @@ export async function syncPokemon(db, { apiKey, log = console.log, fullRefresh =
       }
       const rows = cards.map((card) => mapPokemonCard(card));
       cardTotal += await db.upsert('cards', withPrices ? rows : withoutPrices(rows));
+      priced += rows.filter((row) => row.market_usd !== null || row.market_eur !== null).length;
     } catch (error) {
       failedSets.push(set.id);
       log(`Pokémon: set ${set.id} failed: ${error instanceof Error ? error.message : error}`);
@@ -140,5 +142,5 @@ export async function syncPokemon(db, { apiKey, log = console.log, fullRefresh =
   if (failedSets.length > 0 && failedSets.length === toRefresh.length) {
     throw new Error(`Every Pokémon set failed to download (${failedSets.length} sets)`);
   }
-  return { sets: apiSets.length, cards: cardTotal, failedSets };
+  return { sets: apiSets.length, cards: cardTotal, failedSets, priced: withPrices ? priced : undefined };
 }

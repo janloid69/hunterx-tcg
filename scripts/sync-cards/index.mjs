@@ -68,7 +68,8 @@ if (!withPrices) {
   report('warning', 'prices', message);
 } else {
   try {
-    await syncFxRates(db);
+    const rates = await syncFxRates(db);
+    report('notice', 'exchange rates', rates.map((row) => `1 ${row.currency} = ₱${row.php.toFixed(2)}`).join(', '));
   } catch (error) {
     const message = `Couldn't update exchange rates (yesterday's stay in use): ${error instanceof Error ? error.message : error}`;
     console.error(message);
@@ -87,6 +88,7 @@ for (const game of games) {
       'notice',
       game,
       `Saved ${result?.sets ?? '?'} sets and ${result?.cards ?? '?'} cards in ${seconds}s` +
+        (result?.priced !== undefined ? `, ${result.priced} with a global price` : '') +
         (totalCards === null ? '' : ` (${totalCards} ${game} cards in the database)`),
     );
     if (result?.failedSets?.length) {

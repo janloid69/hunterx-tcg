@@ -150,7 +150,9 @@ supabase/tests/run_local.sh
   (Riftcodex) blocks GitHub's servers. To bring it back, run
   `update public.games set enabled = true where id = 'riftbound';` in Supabase's SQL Editor.
 - **Prices refresh nightly.** One Piece prices update every night. Pokémon re-downloads every set once a week
-  (Sunday morning in the Philippines) to refresh older sets' prices; recent sets update nightly. To refresh
+  (Sunday morning in the Philippines; it can take two hours or more because the Pokémon API is slow) to
+  refresh older sets' prices; recent sets update nightly. The run's summary page shows how many cards got a
+  global price and the day's exchange rates. To refresh
   everything now, run **Sync card data** from the Actions tab with "Re-download every Pokémon set" ticked.
 - **Global prices are a reference.** They're US/EU online prices converted to pesos; local prices can be very
   different, which is why the HunterX price comes first whenever a card has sold here.
