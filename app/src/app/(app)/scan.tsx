@@ -35,9 +35,9 @@ export default function ScanScreen() {
   );
 
   const [mode, setMode] = useState<Mode>('single');
-  const [reading, setReading] = useState(true);
   const [scannerNote, setScannerNote] = useState<string | null>(null);
   const [lastRead, setLastRead] = useState<string | null>(null);
+  const [matchedNumber, setMatchedNumber] = useState<string | null>(null);
   const [matches, setMatches] = useState<CardWithSet[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [prices, setPrices] = useState<Map<string, CardPrice>>(new Map());
@@ -47,46 +47,73 @@ export default function ScanScreen() {
   const [typed, setTyped] = useState('');
   const [typedError, setTypedError] = useState<string | null>(null);
   const [finding, setFinding] = useState(false);
-  const recentMiss = useRef<{ key: string; at: number } | null>(null);
   const busy = useRef(false);
+  // The camera keeps reading while a card is showing; these decide when to switch.
+  const lookups = useRef(new Map<string, { guess: ScanGuess | null; cards: CardWithSet[]; at: number }>());
+  const shownKey = useRef<string | null>(null);
+  const pending = useRef<{ key: string; at: number } | null>(null);
+  const ignored = useRef<{ key: string; until: number } | null>(null);
 
   const selected = matches.find((card) => card.id === selectedId) ?? null;
   const selectedPrice = selected ? prices.get(selected.id) : undefined;
 
+  /** Looks up a number once a minute at most; the camera reads the same one many times a second. */
+  const lookup = useCallback(async (guesses: ScanGuess[]) => {
+    const cacheKey = guesses.map((guess) => guess.key).join('|');
+    const cached = lookups.current.get(cacheKey);
+    if (cached && Date.now() - cached.at < 60_000) return cached;
+    const found = { ...(await findCards(guesses)), at: Date.now() };
+    lookups.current.set(cacheKey, found);
+    return found;
+  }, []);
+
+  /** Shows the card for what was read. Returns true when a card is (now) showing. */
   const showMatches = useCallback(async (guesses: ScanGuess[], fromCamera: boolean): Promise<boolean> => {
     if (guesses.length === 0) return false;
-    const key = guesses.map((guess) => guess.key).join('|');
-    // Don't look up the same unmatched number again every half second.
-    if (fromCamera && recentMiss.current?.key === key && Date.now() - recentMiss.current.at < 4000) return false;
-
-    const { guess, cards } = await findCards(guesses);
+    const { guess, cards } = await lookup(guesses);
     if (guess) setLastRead(showNumber(guess));
-    if (cards.length === 0) {
-      recentMiss.current = { key, at: Date.now() };
-      return false;
+    if (!guess || cards.length === 0) return false;
+
+    const key = guess.key;
+    if (fromCamera) {
+      if (key === shownKey.current) {
+        pending.current = null; // same card still in view
+        return true;
+      }
+      if (ignored.current && ignored.current.key === key && Date.now() < ignored.current.until) return false;
+      // A different card while one is showing: switch once it's read twice in a row,
+      // so one stray read doesn't replace what you're looking at.
+      if (shownKey.current !== null && (pending.current?.key !== key || Date.now() - pending.current.at > 4000)) {
+        pending.current = { key, at: Date.now() };
+        return false;
+      }
     }
+    pending.current = null;
+    shownKey.current = key;
+    setMatchedNumber(showNumber(guess));
     setMatches(cards);
     setSelectedId(cards[0].id);
-    setReading(false);
+    setAddedCardId(null);
     setScannerNote(null);
     if (Platform.OS === 'web') (globalThis.navigator as Navigator | undefined)?.vibrate?.(60);
     getCardPrices(cards.map((card) => card.id))
       .then(setPrices)
       .catch(() => {});
     return true;
-  }, []);
+  }, [lookup]);
 
   const onText = useCallback(
     async (text: string) => {
       if (busy.current) return false;
       busy.current = true;
       try {
-        return await showMatches(parseScanText(text), true);
+        await showMatches(parseScanText(text), true);
       } catch {
-        return false;
+        // a failed lookup just means trying again on the next read
       } finally {
         busy.current = false;
       }
+      return false; // keep reading: pointing at another card switches to it
     },
     [showMatches],
   );
@@ -95,11 +122,15 @@ export default function ScanScreen() {
     setScannerNote(detail ?? (status === 'no-match' ? 'No card number found.' : null));
   }, []);
 
-  function scanAgain() {
+  /** Clears the card on screen. The same number is ignored for a few seconds so it doesn't pop right back. */
+  function clearResult(ignoreSeconds = 5) {
+    if (shownKey.current) ignored.current = { key: shownKey.current, until: Date.now() + ignoreSeconds * 1000 };
+    shownKey.current = null;
+    pending.current = null;
     setMatches([]);
     setSelectedId(null);
     setAddedCardId(null);
-    setReading(true);
+    setMatchedNumber(null);
   }
 
   async function findTyped() {
@@ -126,7 +157,7 @@ export default function ScanScreen() {
     const value = selectedPrice?.value_php ?? 0;
     setSession((current) => ({ count: current.count + quantity, value: current.value + value * quantity }));
     setAdded(`Added ${selected.name}${quantity > 1 ? ` ×${quantity}` : ''} to your binder.`);
-    if (mode === 'bulk') scanAgain();
+    if (mode === 'bulk') clearResult(3);
     else setAddedCardId(selected.id);
   }
 
@@ -134,9 +165,9 @@ export default function ScanScreen() {
 
   const scanner = (
     <View style={{ gap: 8 }}>
-      <CardScanner enabled={focused} reading={focused && reading} height={cameraHeight} onText={onText} onStatus={onStatus} />
+      <CardScanner enabled={focused} reading={focused} height={cameraHeight} onText={onText} onStatus={onStatus} />
       {scannerNote ? <Notice tone="info">{scannerNote}</Notice> : null}
-      {lastRead && matches.length === 0 && reading ? (
+      {lastRead && matches.length === 0 ? (
         <AppText variant="small" style={{ textAlign: 'center' }}>
           Read {lastRead}, but no card matched yet. Hold steady and fill the box with the number.
         </AppText>
@@ -147,7 +178,7 @@ export default function ScanScreen() {
   const result = selected ? (
     <Surface style={{ gap: 14 }}>
       <AppText variant="eyebrow">
-        {lastRead ? `Number found · ${lastRead}` : 'Match found'}
+        {matchedNumber ? `Number found · ${matchedNumber}` : 'Match found'}
       </AppText>
       {matches.length > 1 ? (
         <View style={{ gap: 8 }}>
@@ -187,12 +218,14 @@ export default function ScanScreen() {
 
       <AddToBinderForm key={selected.id} cardId={selected.id} onAdded={onAdded} />
 
+      {addedCardId === selected.id ? (
+        <AppText variant="small" color={colors.up}>
+          Added. Point the camera at your next card and it switches by itself.
+        </AppText>
+      ) : null}
+
       <View style={styles.resultActions}>
-        {addedCardId === selected.id ? (
-          <Button label="Scan another" icon="scan" onPress={() => { setAdded(null); scanAgain(); }} />
-        ) : (
-          <Button label="Not this card" variant="outline" onPress={scanAgain} />
-        )}
+        <Button label={addedCardId === selected.id ? 'Clear' : 'Not this card'} variant="outline" onPress={() => clearResult()} />
         <Button label="Price guide" variant="ghost" icon="chart" onPress={() => router.push({ pathname: '/card/[id]', params: { id: selected.id } })} />
       </View>
     </Surface>
@@ -216,8 +249,8 @@ export default function ScanScreen() {
       </View>
       <AppText variant="body" color={colors.textMuted}>
         {mode === 'bulk'
-          ? 'Bulk: each card goes straight back to scanning after you add it. Great for a stack of pulls.'
-          : 'Point your camera at the number in the card’s bottom corner, like OP01-120 or 238/191.'}
+          ? 'Bulk: after you add a card it clears, ready for the next one. Great for a stack of pulls.'
+          : 'Point your camera at the number in the card’s bottom corner, like OP01-120 or 238/191. Move to another card any time and it switches by itself.'}
       </AppText>
 
       {added ? <Notice tone="success">{added}</Notice> : null}
