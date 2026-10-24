@@ -167,6 +167,9 @@ export function createDiscordRest({ token, fetchImpl = fetch, sleep = sleepFor, 
       }
     },
 
+    /** The server's Discord events (scheduled, live, finished and cancelled). */
+    listScheduledEvents: (guildId) => request('GET', `/guilds/${guildId}/scheduled-events?with_user_count=true`),
+
     /** Everyone in the server (people, not bots), 1000 at a time. */
     async listMembers(guildId) {
       const members = [];

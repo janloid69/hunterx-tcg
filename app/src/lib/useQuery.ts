@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type DependencyList } from 'react';
 
 import { errorMessage } from './supabase';
 
-type QueryState<T> = {
+export type QueryState<T> = {
   data: T | undefined;
   error: string | null;
   loading: boolean;

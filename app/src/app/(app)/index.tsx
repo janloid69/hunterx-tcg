@@ -6,6 +6,7 @@ import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { CardArt } from '@/components/CardArt';
+import { InstallCard } from '@/components/InstallCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { ListingCard } from '@/components/ListingCard';
 import { Badge, Notice, ProgressBar, Screen, SectionHeader, Surface } from '@/components/ui';
@@ -18,19 +19,21 @@ import { discordInviteUrl } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import { useQuery } from '@/lib/useQuery';
 
-// Remembered on this device only; members can always join from Community.
+// Remembered on this device only; members can always join from Community and
+// find install steps on Profile.
 const HIDE_JOIN_KEY = 'hx:hide-join-discord';
+const HIDE_INSTALL_KEY = 'hx:hide-install';
 
-function useJoinNoticeHidden(): [boolean, () => void] {
+function useHiddenFlag(key: string): [boolean, () => void] {
   const [hidden, setHidden] = useState(true);
   useEffect(() => {
-    AsyncStorage.getItem(HIDE_JOIN_KEY)
+    AsyncStorage.getItem(key)
       .then((value) => setHidden(value === '1'))
       .catch(() => setHidden(false));
-  }, []);
+  }, [key]);
   const hide = () => {
     setHidden(true);
-    AsyncStorage.setItem(HIDE_JOIN_KEY, '1').catch(() => {});
+    AsyncStorage.setItem(key, '1').catch(() => {});
   };
   return [hidden, hide];
 }
@@ -44,7 +47,8 @@ const QUICK_ACTIONS: { label: string; icon: IconName; href: '/add' | '/scan' | '
 
 export default function HomeScreen() {
   const { profile, roleSyncError } = useAuth();
-  const [joinHidden, hideJoin] = useJoinNoticeHidden();
+  const [joinHidden, hideJoin] = useHiddenFlag(HIDE_JOIN_KEY);
+  const [installHidden, hideInstall] = useHiddenFlag(HIDE_INSTALL_KEY);
   const summary = useQuery(getCollectionSummary, []);
   const value = useQuery(getCollectionValue, []);
   const recent = useQuery(() => getRecentItems(6), []);
@@ -92,6 +96,8 @@ export default function HomeScreen() {
           <Button label="Join the Discord" variant="discord" onPress={() => Linking.openURL(discordInviteUrl)} />
         </Notice>
       ) : null}
+
+      {!installHidden ? <InstallCard compact onDismiss={hideInstall} /> : null}
 
       <Surface style={styles.summary}>
         <AppText variant="eyebrow">Your collection</AppText>

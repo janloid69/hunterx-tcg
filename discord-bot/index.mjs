@@ -10,6 +10,7 @@ import path from 'node:path';
 import { ConfigError, loadConfig } from './src/config.mjs';
 import { createDb } from './src/db.mjs';
 import { createDiscordRest, DiscordError } from './src/discord-rest.mjs';
+import { createEventSync } from './src/events.mjs';
 import { createGateway, Intents } from './src/gateway.mjs';
 import { createHandlers } from './src/handlers.mjs';
 import { createInteractions } from './src/interactions.mjs';
@@ -113,6 +114,7 @@ async function main() {
 
   const handlers = createHandlers({ store, discord, config, log, reportsMode });
   const roles = createRoleSync({ store, discord, config, log });
+  const events = createEventSync({ store, discord, config, log });
   const onInteraction = createInteractions({ store, discord, config, log });
   const worker = createWorker({ store, handlers, log, pollMs: config.pollMs });
 
@@ -136,6 +138,7 @@ async function main() {
         case 'READY':
           log('Connected to the Discord gateway');
           safely('Role check', roles.fullSync());
+          safely('Copying server events', events.sync());
           break;
         case 'RESUMED':
           log('Reconnected to the Discord gateway');
@@ -165,6 +168,7 @@ async function main() {
 
   const timers = [
     setInterval(() => safely('Role check', roles.fullSync()), config.roleSyncMs),
+    setInterval(() => safely('Copying server events', events.sync()), 15 * 60_000),
     setInterval(() => {
       safely('Cleanup', store.cleanup());
       log.prune();

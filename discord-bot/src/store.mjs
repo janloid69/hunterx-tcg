@@ -56,6 +56,13 @@ export function createStore(db) {
       db.upsert('bot_discord_posts', { kind, ref_id: refId, ...fields, updated_at: new Date().toISOString() }, 'kind,ref_id'),
     removePost: (kind, refId) => db.remove('bot_discord_posts', `kind=${eq(kind)}&ref_id=${eq(refId)}`),
 
+    /** Replaces the stored server events with this list. */
+    async saveEvents(rows) {
+      if (rows.length) await db.upsert('community_events', rows, 'id');
+      const keep = rows.map((row) => row.id).filter((id) => /^\d+$/.test(id));
+      await db.remove('community_events', keep.length ? `id=not.in.(${keep.join(',')})` : 'id=not.is.null');
+    },
+
     nextEvents: (limit) => db.rpc('bot_next_events', { p_limit: limit }),
     finishEvent: (id, error = null) => db.rpc('bot_finish_event', { p_id: id, p_error: error }),
     cleanup: () => db.rpc('bot_cleanup'),

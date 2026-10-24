@@ -1,5 +1,6 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -12,7 +13,7 @@ import { colors, fonts } from '@/lib/theme';
 
 const FEATURES = [
   { title: 'Binder and set progress', body: 'Every card you own, what each set is missing, and what you paid.' },
-  { title: 'Peso price guide', body: 'Prices from real sales logged by members in the Philippines.' },
+  { title: 'Scan cards, see peso prices', body: 'Point your camera at a card number. See what it sells for here and worldwide, in pesos.' },
   { title: 'Message sellers here', body: 'Chat with sellers on the site. No need to join the Discord to buy.' },
 ];
 
@@ -96,6 +97,12 @@ export default function SignInScreen() {
           ))}
         </View>
 
+        <Pressable accessibilityRole="link" onPress={() => router.push('/rules')} style={styles.rulesLink}>
+          <AppText variant="smallStrong" color={colors.accent}>
+            House rules and privacy
+          </AppText>
+        </Pressable>
+
         <AppText variant="small" color={colors.textFaint} style={styles.disclaimer}>
           HunterX TCG is a fan-run community site. It is not affiliated with The Pokémon Company,
           Bandai, Konami, Riot Games, Square Enix, Mattel or Takara Tomy.
@@ -106,6 +113,7 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
+  rulesLink: { alignSelf: 'center', minHeight: 40, justifyContent: 'center' },
   page: { flex: 1, backgroundColor: colors.bg },
   content: { flexGrow: 1, justifyContent: 'center', paddingVertical: 48 },
   column: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 24, gap: 24 },

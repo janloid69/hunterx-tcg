@@ -81,6 +81,7 @@ jobs:
           psql -v ON_ERROR_STOP=1 -q -f supabase/tests/20_marketplace_test.sql
           psql -v ON_ERROR_STOP=1 -q -f supabase/tests/30_discord_bot_test.sql
           psql -v ON_ERROR_STOP=1 -q -f supabase/tests/40_price_guide_test.sql
+          psql -v ON_ERROR_STOP=1 -q -f supabase/tests/50_launch_test.sql
       - name: Discord bot end-to-end check (through PostgREST, like Supabase)
         env:
           PGRST_DB_URI: postgresql://postgres:postgres@localhost:5432/postgres

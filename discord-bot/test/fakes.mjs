@@ -27,6 +27,9 @@ export function fakeStore(data = {}) {
       calls.push(['moderate', ...args]);
       if (data.moderateError) throw data.moderateError;
     },
+    saveEvents: async (rows) => {
+      calls.push(['saveEvents', rows]);
+    },
     syncRoles: async (args) => {
       calls.push(['syncRoles', args]);
       return data.syncChanged ?? 1;
@@ -76,6 +79,8 @@ export function fakeDiscord({ failEdits = null, closedDms = [] } = {}) {
       return closedDms.includes(userId) ? null : { id: id() };
     },
     listMembers: async () => [],
+    listScheduledEvents: async () => [],
+    getChannel: async (channelId) => ({ id: channelId, name: 'pull-night-vc' }),
     interactionCallback: async (...args) => record('interactionCallback', ...args),
     editOriginal: async (...args) => record('editOriginal', ...args),
     followup: async (...args) => record('followup', ...args),

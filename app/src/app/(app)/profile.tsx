@@ -6,6 +6,7 @@ import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Icon, type IconName } from '@/components/Icon';
+import { InstallCard } from '@/components/InstallCard';
 import { ConfirmSheet } from '@/components/Sheet';
 import { Badge, Notice, Screen, SectionHeader, Surface, TextField } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
@@ -87,8 +88,11 @@ export default function ProfileScreen() {
         {me ? <LinkRow icon="user" label="View your public profile" onPress={() => router.push({ pathname: '/u/[id]', params: { id: me } })} /> : null}
         <LinkRow icon="tag" label="My listings" onPress={() => router.push('/market/mine')} />
         <LinkRow icon="chat" label="Messages" onPress={() => router.push('/messages')} />
-        {profile?.is_mod ? <LinkRow icon="shield" label="Reports (mods)" onPress={() => router.push('/mod')} /> : null}
+        {profile?.is_mod ? <LinkRow icon="shield" label="Mod tools: reports and catalog" onPress={() => router.push('/mod')} /> : null}
+        <LinkRow icon="flag" label="House rules and privacy" onPress={() => router.push('/rules')} />
       </Surface>
+
+      <InstallCard />
 
       <Surface style={styles.dmRow}>
         <View style={{ flex: 1, gap: 4 }}>

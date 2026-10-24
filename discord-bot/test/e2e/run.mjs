@@ -11,6 +11,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
 import { createDb } from '../../src/db.mjs';
+import { createEventSync } from '../../src/events.mjs';
 import { createHandlers } from '../../src/handlers.mjs';
 import { createStore } from '../../src/store.mjs';
 import { createWorker } from '../../src/worker.mjs';
@@ -136,5 +137,30 @@ const sellerNow = await db.one('profiles', `discord_id=eq.${SELLER}&select=in_gu
 assert.deepEqual(sellerNow, { in_guild: true, is_verified_seller: false, is_mod: false }, 'circle role gone, badge gone');
 const modNow = await db.one('profiles', `discord_id=eq.${MOD}&select=is_mod`);
 assert.equal(modNow.is_mod, true);
+
+// Step 5: server events copied to the Community page ---------------------------
+let discordEvents = [
+  { id: '1700000000000000001', guild_id: config.guildId, channel_id: '1700000000000000009', name: 'Pull night', scheduled_start_time: new Date(Date.now() + 86_400_000).toISOString(), status: 1, entity_type: 2, user_count: 5 },
+  { id: '1700000000000000002', guild_id: config.guildId, channel_id: null, name: 'Meetup', scheduled_start_time: new Date(Date.now() + 2 * 86_400_000).toISOString(), status: 1, entity_type: 3, entity_metadata: { location: 'SM North' } },
+];
+const eventSync = createEventSync({
+  store,
+  discord: { listScheduledEvents: async () => discordEvents, getChannel: async () => ({ name: 'pull-vc' }) },
+  config,
+  log,
+});
+await eventSync.sync();
+let stored = await db.select('community_events', 'select=id,location,interested&order=id');
+assert.deepEqual(stored, [
+  { id: '1700000000000000001', location: 'Voice: pull-vc', interested: 5 },
+  { id: '1700000000000000002', location: 'SM North', interested: null },
+]);
+discordEvents = discordEvents.slice(0, 1);
+await eventSync.sync();
+stored = await db.select('community_events', 'select=id&order=id');
+assert.deepEqual(stored.map((row) => row.id), ['1700000000000000001'], 'finished events are removed');
+discordEvents = [];
+await eventSync.sync();
+assert.deepEqual(await db.select('community_events', 'select=id'), []);
 
 console.log('End-to-end bot check passed');

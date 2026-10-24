@@ -9,10 +9,12 @@ import {
 import { useFonts } from 'expo-font';
 import { Stack, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { setupPwa } from '@/lib/pwa';
 import { colors } from '@/lib/theme';
 
 /**
@@ -56,6 +58,9 @@ export default function RootLayout() {
     Archivo_700Bold,
     Archivo_800ExtraBold,
   });
+  useEffect(() => {
+    setupPwa();
+  }, []);
 
   return (
     <SafeAreaProvider style={{ backgroundColor: colors.bg }}>
@@ -80,6 +85,7 @@ function RootNavigator() {
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
+      <Stack.Screen name="rules" />
     </Stack>
   );
 }

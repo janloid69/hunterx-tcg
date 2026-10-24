@@ -14,6 +14,8 @@ Runs on the HunterX 24/7 server and connects the website to the Discord:
   a mod has reviewed it. The website's Reports page and the Discord buttons stay in sync.
 - **Roles:** Verified Seller (hunterxcircle) and Mod badges on the website update the moment roles change in
   Discord, including when a Circle subscription ends or someone leaves. Everyone is re-checked every 6 hours.
+- **Server events:** upcoming Discord events (pull nights, meetups) are copied to the website's Community page
+  every 15 minutes. Create them in Discord as usual (server name → Create Event).
 
 It needs only Node.js 22. No `npm install`, no other packages.
 

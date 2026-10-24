@@ -36,7 +36,14 @@ account deletion, and the Discord bot).
   members hide a listing until a mod reviews it.
 - **Delete account** from Profile (removes photos, then everything tied to the account).
 - **Discord bot:** posts listings and vouches in their channels, DMs members about messages and deals (they can
-  turn this off on Profile), opens report tickets with mod buttons, and keeps badges in sync with Discord roles.
+  turn this off on Profile), opens report tickets with mod buttons, keeps badges in sync with Discord roles, and
+  copies upcoming server events to the Community page.
+- **Community:** upcoming Discord events, latest vouches and top traders.
+- **Mod tools:** reports, plus a review queue for toys and sealed products members add (approve, fix the name,
+  merge duplicates, remove junk).
+- **House rules and privacy** page, reachable before signing in.
+- **Add to home screen:** a web app manifest and icons, so the site opens full screen with its own icon. Home
+  and Profile show the steps for the member's phone.
 - **Peso price guide:** every card has a **HunterX price** (median of its recent raw Near Mint / Lightly Played
   sales here: marketplace sales plus sales Discord members log from Facebook groups, meetups or shops) and a
   **global price** (TCGplayer or Cardmarket, converted to pesos at the day's rate). Card pages show both, recent
@@ -69,8 +76,8 @@ the code. They go only where these steps say.
 1. Create a project at <https://supabase.com> (the free plan is enough). Pick the Singapore region for the Philippines.
 2. **Create the database:** open **SQL Editor**, and run each file in `supabase/migrations/` in order, in a new
    query each time: `20261023000000_init.sql`, then `20261024000000_marketplace.sql`, then
-   `20261025000000_discord_bot.sql`, then `20261026000000_price_guide.sql`. Each should say "Success. No rows
-   returned". The marketplace file also creates the `listing-photos` storage bucket and turns on live chat
+   `20261025000000_discord_bot.sql`, then `20261026000000_price_guide.sql`, then `20261027000000_launch.sql`.
+   Each should say "Success. No rows returned". The marketplace file also creates the `listing-photos` storage bucket and turns on live chat
    updates.
 3. **Turn on Discord sign-in:** Authentication → Providers (Sign In / Providers) → **Discord**. Turn it on and paste the
    Client ID and Client Secret from step 1. Copy the **Callback URL** shown there
