@@ -32,6 +32,11 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
         run: npx expo export --platform web
+      - name: Home-screen files are in the build
+        run: |
+          test -f dist/manifest.webmanifest
+          test -f dist/icons/icon-512.png
+          test -f dist/icons/apple-touch-icon.png
       - uses: actions/upload-artifact@v6
         with:
           name: website
