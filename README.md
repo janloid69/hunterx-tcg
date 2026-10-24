@@ -3,8 +3,8 @@
 A free website (and later, iPhone and Android apps) where Filipino collectors track
 their cards and collectibles in pesos and trade with members of the HunterX Discord.
 
-Done so far: **Phase 1** (Discord sign-in, card database, binder) and **Phase 3, part 1** (the marketplace:
-listings, on-site messages and offers, vouches, reports and blocks, account deletion).
+Done so far: **Phase 1** (Discord sign-in, card database, binder) and **Phase 3** (the marketplace: listings,
+on-site messages and offers, vouches, reports and blocks, account deletion, and the Discord bot).
 
 ## What's in this repo
 
@@ -15,6 +15,7 @@ listings, on-site messages and offers, vouches, reports and blocks, account dele
 | `supabase/functions/discord-sync/` | Reads a member's HunterX Discord roles at sign-in and sets their badges. |
 | `supabase/tests/` | Checks that the database and its security rules work. |
 | `scripts/sync-cards/` | Copies Pokémon, One Piece and Riftbound card data into the database every night. |
+| `discord-bot/` | The HunterX Discord bot: market and vouch posts, DMs, report tickets, role sync. Runs on the 24/7 server; setup in its README. |
 | `.github/workflows/` | Automatic checks on every change, and the nightly card sync. |
 | `netlify.toml` | Free hosting setup for the website on Netlify. |
 
@@ -33,6 +34,8 @@ listings, on-site messages and offers, vouches, reports and blocks, account dele
   ratings, report a listing, member or message, block, and a Reports page for mods. Three reports from different
   members hide a listing until a mod reviews it.
 - **Delete account** from Profile (removes photos, then everything tied to the account).
+- **Discord bot:** posts listings and vouches in their channels, DMs members about messages and deals (they can
+  turn this off on Profile), opens report tickets with mod buttons, and keeps badges in sync with Discord roles.
 - Scan and the peso price guide come next. Final sale prices are already being recorded for it.
 
 ---
@@ -56,9 +59,9 @@ the code. They go only where these steps say.
 
 1. Create a project at <https://supabase.com> (the free plan is enough). Pick the Singapore region for the Philippines.
 2. **Create the database:** open **SQL Editor**, and run each file in `supabase/migrations/` in order, in a new
-   query each time: first `20261023000000_init.sql`, then `20261024000000_marketplace.sql`. Each should say
-   "Success. No rows returned". The marketplace file also creates the `listing-photos` storage bucket and turns
-   on live chat updates.
+   query each time: `20261023000000_init.sql`, then `20261024000000_marketplace.sql`, then
+   `20261025000000_discord_bot.sql`. Each should say "Success. No rows returned". The marketplace file also
+   creates the `listing-photos` storage bucket and turns on live chat updates.
 3. **Turn on Discord sign-in:** Authentication → Providers (Sign In / Providers) → **Discord**. Turn it on and paste the
    Client ID and Client Secret from step 1. Copy the **Callback URL** shown there
    (it looks like `https://<project-ref>.supabase.co/auth/v1/callback`).
@@ -114,7 +117,8 @@ npx expo start --web      # opens http://localhost:8081
 
 Every push runs **Checks** on GitHub: it builds the website, applies the database to a fresh Postgres,
 runs the security checks (members can't see or edit each other's binders, can't give themselves badges,
-etc.), and tests the card sync.
+etc.), tests the card sync, and runs the Discord bot against that database through PostgREST (what
+Supabase uses) with Discord faked.
 
 To run the database checks locally (needs Postgres 15+ installed):
 
@@ -124,9 +128,9 @@ supabase/tests/run_local.sh
 
 ## Good to know
 
-- **Roles refresh at sign-in.** Discord only shares a member's roles during sign-in, so a new
-  hunterxcircle member should sign out and back in to get the badge. The Discord bot (Phase 3) will keep
-  roles up to date automatically, including when a monthly subscription ends.
+- **Roles stay in sync.** Badges are set at sign-in, and the Discord bot updates them the moment roles change
+  in Discord (including when a monthly Circle subscription ends). If the bot is off, signing out and back in
+  refreshes them.
 - **One Piece and Riftbound card fields** follow the APIs' published docs, which don't list every field.
   If the first nightly sync reports a problem, check the Actions log; the mappers in
   `scripts/sync-cards/sources/` are written to be easy to adjust.
@@ -142,7 +146,7 @@ supabase/tests/run_local.sh
 
 1. **Foundations (this phase):** Discord sign-in, card database sync, binder and set progress.
 2. **Scan and prices:** card-number scanner, sales log, peso price guide, collection value.
-3. **Market and trust:** listings and offers, chat and vouches, report/block/delete account, the Discord bot.
+3. **Market and trust (done):** listings and offers, chat and vouches, report/block/delete account, the Discord bot.
 4. **Website launch:** beta with members, domain and hosting, home-screen install, feedback round.
 
 HunterX TCG is a fan-run community site. It is not affiliated with The Pokémon Company, Bandai, Konami,

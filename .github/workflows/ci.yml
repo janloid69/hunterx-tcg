@@ -2,8 +2,9 @@ name: Checks
 
 # Runs on every push and pull request:
 #   - website: installs packages, type-checks, and builds the website
-#   - database: applies the migration to Postgres and runs the security checks
-#   - card sync: runs the card mapping tests
+#   - database: applies the migrations to Postgres, runs the security checks,
+#     the card mapping tests, and the Discord bot against PostgREST
+#   - bot: the Discord bot's own tests
 
 on:
   push:
@@ -76,3 +77,22 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -q -f supabase/tests/10_schema_test.sql
           psql -v ON_ERROR_STOP=1 -q -f supabase/tests/20_marketplace_test.sql
+          psql -v ON_ERROR_STOP=1 -q -f supabase/tests/30_discord_bot_test.sql
+      - name: Discord bot end-to-end check (through PostgREST, like Supabase)
+        env:
+          PGRST_DB_URI: postgresql://postgres:postgres@localhost:5432/postgres
+        run: |
+          curl -sSL https://github.com/PostgREST/postgrest/releases/download/v12.2.3/postgrest-v12.2.3-linux-static-x64.tar.xz | tar -xJ -C /tmp
+          POSTGREST_BIN=/tmp/postgrest discord-bot/test/e2e/run.sh
+
+  bot:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: discord-bot
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm test

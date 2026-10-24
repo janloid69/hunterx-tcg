@@ -1,0 +1,14 @@
+{
+  "name": "hunterx-discord-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HunterX Discord bot: market and vouch posts, DMs, report tickets, role sync.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node --env-file=.env index.mjs",
+    "test": "node --test \"test/*.test.mjs\""
+  }
+}

@@ -421,6 +421,12 @@ export async function unblockMember(memberId: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Turns the HunterX bot's Discord DMs on or off for the signed-in member. */
+export async function setDiscordDms(enabled: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_discord_dms', { p_enabled: enabled });
+  if (error) throw error;
+}
+
 export const REPORT_REASONS: { value: ReportReason; label: string }[] = [
   { value: 'scam', label: 'Scam or fraud' },
   { value: 'fake', label: 'Fake or counterfeit item' },

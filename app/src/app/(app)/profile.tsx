@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Image, Pressable, StyleSheet, Switch, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
@@ -9,7 +9,7 @@ import { Icon, type IconName } from '@/components/Icon';
 import { ConfirmSheet } from '@/components/Sheet';
 import { Badge, Notice, Screen, SectionHeader, Surface, TextField } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { deleteMyAccount, getMyBlocks, unblockMember } from '@/lib/market';
+import { deleteMyAccount, getMyBlocks, setDiscordDms, unblockMember } from '@/lib/market';
 import { errorMessage } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import { useQuery } from '@/lib/useQuery';
@@ -22,6 +22,21 @@ export default function ProfileScreen() {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const blocks = useQuery(getMyBlocks, []);
+  const [dms, setDms] = useState(profile?.discord_dms ?? true);
+  useEffect(() => {
+    if (profile) setDms(profile.discord_dms ?? true);
+  }, [profile]);
+
+  async function toggleDms(next: boolean) {
+    setDms(next);
+    setError(null);
+    try {
+      await setDiscordDms(next);
+    } catch (cause) {
+      setDms(!next);
+      setError(errorMessage(cause));
+    }
+  }
 
   const synced = profile?.roles_synced_at ? new Date(profile.roles_synced_at) : null;
   const me = session?.user.id;
@@ -73,6 +88,23 @@ export default function ProfileScreen() {
         <LinkRow icon="tag" label="My listings" onPress={() => router.push('/market/mine')} />
         <LinkRow icon="chat" label="Messages" onPress={() => router.push('/messages')} />
         {profile?.is_mod ? <LinkRow icon="shield" label="Reports (mods)" onPress={() => router.push('/mod')} /> : null}
+      </Surface>
+
+      <Surface style={styles.dmRow}>
+        <View style={{ flex: 1, gap: 4 }}>
+          <AppText variant="bodyStrong">Discord DMs</AppText>
+          <AppText variant="small">
+            The HunterX bot DMs you about new messages, offers, finished deals and your reports. Only works while you’re
+            in the HunterX Discord.
+          </AppText>
+        </View>
+        <Switch
+          accessibilityLabel="Discord DMs from the HunterX bot"
+          value={dms}
+          onValueChange={toggleDms}
+          trackColor={{ false: colors.surface3, true: colors.accent }}
+          thumbColor={colors.text}
+        />
       </Surface>
 
       <Surface style={{ gap: 8 }}>
@@ -183,6 +215,7 @@ const styles = StyleSheet.create({
   avatarImage: { width: 60, height: 60, borderRadius: 30 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
   links: { paddingVertical: 4 },
+  dmRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 },
   blockRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10 },
   divider: { borderTopWidth: 1, borderTopColor: colors.surface3 },

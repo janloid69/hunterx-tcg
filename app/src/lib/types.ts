@@ -8,6 +8,8 @@ export type Profile = {
   is_verified_seller: boolean;
   is_mod: boolean;
   roles_synced_at: string | null;
+  /** The HunterX bot DMs them on Discord about messages and deals. */
+  discord_dms?: boolean;
 };
 
 export type Game = {
