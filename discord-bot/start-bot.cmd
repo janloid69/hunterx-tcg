@@ -16,5 +16,5 @@ if %ERRORLEVEL%==2 (
   exit /b 2
 )
 echo The bot stopped unexpectedly. Starting it again in 15 seconds...
-timeout /t 15 /nobreak >nul
+ping -n 16 127.0.0.1 >nul
 goto loop

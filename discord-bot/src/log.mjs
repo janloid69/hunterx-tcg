@@ -1,7 +1,7 @@
 // Writes what the bot does to the screen and to logs/bot-YYYY-MM-DD.log,
 // keeping two weeks of files.
 
-import { appendFileSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -33,7 +33,9 @@ export function createLogger({ dir, keepDays = 14, now = () => new Date(), toCon
     if (toConsole) console.log(line);
     if (canWrite) {
       try {
-        appendFileSync(path.join(dir, `bot-${day(at)}.log`), `${line}\n`);
+        const file = path.join(dir, `bot-${day(at)}.log`);
+        // The byte-order mark lets Windows PowerShell show emoji channel names properly.
+        appendFileSync(file, `${existsSync(file) ? '' : '\uFEFF'}${line}\n`);
       } catch {
         // a full disk shouldn't stop the bot
       }
