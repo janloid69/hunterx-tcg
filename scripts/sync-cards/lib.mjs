@@ -60,10 +60,17 @@ export function createDb({ url, serviceKey }) {
       const total = Number((res.headers.get('content-range') ?? '').split('/')[1]);
       return Number.isFinite(total) ? total : null;
     },
-    async upsert(table, rows, { batchSize = 500 } = {}) {
+    /** True when the table has the column (false before a migration that adds it). */
+    async hasColumn(table, column) {
+      const res = await fetch(`${base}/${table}?select=${column}&limit=1`, { headers });
+      if (res.ok) return true;
+      if (res.status === 400) return false;
+      throw new Error(`checking ${table}.${column} failed: ${res.status} ${await res.text()}`);
+    },
+    async upsert(table, rows, { batchSize = 500, onConflict = 'id' } = {}) {
       for (let i = 0; i < rows.length; i += batchSize) {
         const batch = rows.slice(i, i + batchSize);
-        const res = await fetch(`${base}/${table}?on_conflict=id`, {
+        const res = await fetch(`${base}/${table}?on_conflict=${onConflict}`, {
           method: 'POST',
           headers: { ...headers, Prefer: 'resolution=merge-duplicates,return=minimal' },
           body: JSON.stringify(batch),
@@ -99,4 +106,22 @@ export function withCardCounts(sets, cards) {
   const counts = new Map();
   for (const card of cards) counts.set(card.set_id, (counts.get(card.set_id) ?? 0) + 1);
   return sets.map((set) => ({ ...set, card_count: counts.get(set.id) ?? set.card_count ?? 0 }));
+}
+
+/** First value that's a positive number, rounded to cents; else null. */
+export function positivePrice(...values) {
+  for (const value of values) {
+    const number = Number(value);
+    if (value !== null && value !== undefined && value !== '' && Number.isFinite(number) && number > 0) {
+      return Math.round(number * 100) / 100;
+    }
+  }
+  return null;
+}
+
+const PRICE_FIELDS = ['market_usd', 'market_eur', 'market_updated_at'];
+
+/** Drops price columns, for databases that don't have the price guide migration yet. */
+export function withoutPrices(rows) {
+  return rows.map((row) => Object.fromEntries(Object.entries(row).filter(([key]) => !PRICE_FIELDS.includes(key) && key !== 'printed_total')));
 }

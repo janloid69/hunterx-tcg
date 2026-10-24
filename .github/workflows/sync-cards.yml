@@ -1,7 +1,8 @@
 name: Sync card data
 
-# Copies Pokémon, One Piece and Riftbound card data into Supabase every night
-# (about 1:47 AM Philippine time). You can also run it by hand from the
+# Copies Pokémon, One Piece and Riftbound card data, global card prices and
+# exchange rates into Supabase every night (about 1:47 AM Philippine time).
+# You can also run it by hand from the
 # Actions tab. Needs these repository secrets:
 #   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and optionally POKEMONTCG_API_KEY.
 
@@ -14,6 +15,11 @@ on:
         description: 'Games to sync (space separated: pokemon one-piece riftbound). Empty = every game shown on the site.'
         required: false
         default: ''
+      full_refresh:
+        description: 'Re-download every Pokémon set now (refreshes all prices; takes about 15 minutes). This happens every Sunday anyway.'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   sync:
@@ -29,4 +35,5 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           POKEMONTCG_API_KEY: ${{ secrets.POKEMONTCG_API_KEY }}
+          FULL_REFRESH: ${{ github.event.inputs.full_refresh || 'false' }}
         run: node scripts/sync-cards/index.mjs ${{ github.event.inputs.games }}

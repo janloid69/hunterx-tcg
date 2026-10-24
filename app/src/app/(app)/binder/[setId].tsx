@@ -16,6 +16,7 @@ import { Button } from '@/components/Button';
 import { CardArt } from '@/components/CardArt';
 import { ChipRow } from '@/components/Chip';
 import { Icon } from '@/components/Icon';
+import { PriceLine } from '@/components/Prices';
 import { Notice, ProgressBar, Stepper } from '@/components/ui';
 import {
   addToCollection,
@@ -26,6 +27,7 @@ import {
   setQuantity,
 } from '@/lib/data';
 import { conditionLabels, percent } from '@/lib/format';
+import { getCardPrice } from '@/lib/prices';
 import { errorMessage } from '@/lib/supabase';
 import { colors, maxContentWidth } from '@/lib/theme';
 import type { Card, CollectionItem, Condition } from '@/lib/types';
@@ -207,6 +209,8 @@ function CardSheet({
   const [condition, setCondition] = useState<Condition>('NM');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const cardId = card?.id ?? null;
+  const price = useQuery(() => (cardId ? getCardPrice(cardId) : Promise.resolve(null)), [cardId]);
 
   async function run(action: () => Promise<void>) {
     setBusy(true);
@@ -235,6 +239,19 @@ function CardSheet({
                   #{card.number}
                   {card.rarity ? ` · ${card.rarity}` : ''}
                 </AppText>
+                <PriceLine price={price.data} />
+                <Pressable
+                  accessibilityRole="link"
+                  onPress={() => {
+                    onClose();
+                    router.push({ pathname: '/card/[id]', params: { id: card.id } });
+                  }}
+                  style={{ alignSelf: 'flex-start', minHeight: 32, justifyContent: 'center' }}
+                >
+                  <AppText variant="smallStrong" color={colors.accent}>
+                    Price guide and sales
+                  </AppText>
+                </Pressable>
               </View>
               <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.close}>
                 <Icon name="close" size={20} color={colors.text} strokeWidth={2} />

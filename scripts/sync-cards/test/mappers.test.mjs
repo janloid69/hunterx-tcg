@@ -8,9 +8,10 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { isoDate, sortNumber } from '../lib.mjs';
+import { isoDate, positivePrice, sortNumber, withoutPrices } from '../lib.mjs';
+import { parseErApi, parseFrankfurter, syncFxRates } from '../sources/fx.mjs';
 import { mapOnePieceCards, setCodeFromCardCode } from '../sources/one-piece.mjs';
-import { mapPokemonCard, mapPokemonSet, setsNeedingCards } from '../sources/pokemon.mjs';
+import { mapPokemonCard, mapPokemonSet, pokemonPrices, setsNeedingCards } from '../sources/pokemon.mjs';
 import { mapRiftboundCards, mapRiftboundSets, pageItems } from '../sources/riftbound.mjs';
 
 const fixture = (name) =>
@@ -19,6 +20,9 @@ const NOW = '2026-10-23T00:00:00.000Z';
 
 const SET_KEYS = ['id', 'game_id', 'code', 'name', 'series', 'release_date', 'card_count', 'logo_url', 'source', 'updated_at'];
 const CARD_KEYS = ['id', 'game_id', 'set_id', 'number', 'sort_number', 'name', 'rarity', 'image_small', 'image_large', 'source', 'updated_at'];
+const PRICE_KEYS = ['market_usd', 'market_eur', 'market_updated_at'];
+const POKEMON_SET_KEYS = [...SET_KEYS, 'printed_total'];
+const PRICED_CARD_KEYS = [...CARD_KEYS, ...PRICE_KEYS];
 
 function assertShape(rows, keys) {
   for (const row of rows) assert.deepEqual(Object.keys(row).sort(), [...keys].sort());
@@ -38,15 +42,16 @@ test('helpers', () => {
 
 test('Pokémon sets and cards', () => {
   const sets = fixture('pokemon-sets.json').data.map((set) => mapPokemonSet(set, NOW));
-  assertShape(sets, SET_KEYS);
+  assertShape(sets, POKEMON_SET_KEYS);
   assert.equal(sets[0].id, 'pokemon:sv8');
   assert.equal(sets[0].code, 'SSP');
   assert.equal(sets[0].release_date, '2024-11-08');
   assert.equal(sets[0].card_count, 252);
+  assert.equal(sets[0].printed_total, 191, 'the number printed on cards: 238/191');
   assert.equal(sets[1].code, 'BASE1');
 
   const cards = fixture('pokemon-cards.json').data.map((card) => mapPokemonCard(card, NOW));
-  assertShape(cards, CARD_KEYS);
+  assertShape(cards, PRICED_CARD_KEYS);
   assert.equal(cards[0].id, 'pokemon:sv8-238');
   assert.equal(cards[0].set_id, 'pokemon:sv8');
   assert.equal(cards[0].sort_number, 238);
@@ -74,10 +79,52 @@ test('Pokémon downloads sets that are missing cards, plus recent sets', () => {
   assert.deepEqual(setsNeedingCards(apiSets, empty, later).map((s) => s.id), ['sv8']);
 });
 
+test('Pokémon prices: the card\'s own printing, then Cardmarket', () => {
+  const [pikachu, exeggcute] = fixture('pokemon-cards.json').data;
+  assert.deepEqual(pokemonPrices(pikachu), { market_usd: 201.37, market_eur: 149.99, market_updated_at: '2026-10-22T00:00:00Z' });
+  assert.equal(pokemonPrices(exeggcute).market_usd, 0.08, 'normal before reverse holo');
+  assert.deepEqual(pokemonPrices({ tcgplayer: { prices: { reverseHolofoil: { market: 0.5 } } } }).market_usd, 0.5, 'reverse holo when that is all there is');
+  assert.deepEqual(pokemonPrices({}), { market_usd: null, market_eur: null, market_updated_at: null });
+  assert.equal(positivePrice(null, 0, '', '3.456'), 3.46);
+});
+
+test('exchange rates', async () => {
+  assert.deepEqual(parseFrankfurter(fixture('fx-frankfurter-usd.json'), 'USD'), { currency: 'USD', php: 58.214, as_of: '2026-10-23' });
+  assert.throws(() => parseFrankfurter({ rates: {} }, 'USD'), /no PHP rate/);
+  const [usd, eur] = parseErApi(fixture('fx-er-api.json'));
+  assert.deepEqual(usd, { currency: 'USD', php: 58.3, as_of: '2026-10-23' });
+  assert.equal(eur.php, 63.362678, 'EUR->PHP from the USD table');
+
+  // Frankfurter down: falls back, and saves by currency.
+  const saved = [];
+  const db = { upsert: async (table, rows, options) => saved.push({ table, rows, options }) };
+  const get = async (url) => {
+    if (url.includes('frankfurter')) throw new Error('503');
+    return fixture('fx-er-api.json');
+  };
+  await syncFxRates(db, { get, log: () => {} });
+  assert.equal(saved[0].table, 'fx_rates');
+  assert.deepEqual(saved[0].options, { onConflict: 'currency' });
+  assert.deepEqual(saved[0].rows.map((r) => r.currency), ['USD', 'EUR']);
+});
+
+test('without the price guide migration, price columns are left out', () => {
+  const [card] = fixture('pokemon-cards.json').data.map((c) => mapPokemonCard(c, NOW));
+  assertShape(withoutPrices([card]), CARD_KEYS);
+  const [set] = fixture('pokemon-sets.json').data.map((s) => mapPokemonSet(s, NOW));
+  assertShape(withoutPrices([set]), SET_KEYS);
+});
+
 test('One Piece cards, alternate arts and derived sets', () => {
   const { sets, cards } = mapOnePieceCards(fixture('one-piece-cards.json'), NOW);
   assertShape(sets, SET_KEYS);
-  assertShape(cards, CARD_KEYS);
+  assertShape(cards, PRICED_CARD_KEYS);
+  const base = cards.find((c) => c.id === 'one-piece:OP01-001');
+  assert.equal(base.market_usd, 1.25, 'market price before inventory price');
+  assert.equal(base.market_updated_at, '2026-10-22T00:00:00Z');
+  assert.equal(cards.find((c) => c.id === 'one-piece:OP01-001_p1').market_usd, 48.5, 'alt arts have their own price');
+  assert.equal(cards.find((c) => c.id === 'one-piece:OP01-120').market_usd, 210);
+  assert.equal(cards.find((c) => c.id === 'one-piece:EB01-001').market_usd, null);
 
   assert.deepEqual(sets.map((s) => s.id).sort(), ['one-piece:EB-01', 'one-piece:OP-01']);
   const op01 = sets.find((s) => s.id === 'one-piece:OP-01');

@@ -260,7 +260,7 @@ begin
   update public.listings set status = 'sold', buyer_id = 'aaaaaaaa-0000-0000-0000-000000000003', sold_price = 1300
   where id = listing_id;
 
-  select * into sale from public.sales where sales.listing_id = current_setting('test.listing')::uuid;
+  select s.price, s.card_id into sale.price, sale.card_id from public.sales s where s.listing_id = current_setting('test.listing')::uuid;
   if sale.price <> 1300 then raise exception 'sale price should be 1300, got %', sale.price; end if;
   if sale.card_id <> 'pokemon:sv8-238' then raise exception 'sale is missing its card'; end if;
   if (select sold_at from public.listings where id = listing_id) is null then raise exception 'sold_at not set'; end if;

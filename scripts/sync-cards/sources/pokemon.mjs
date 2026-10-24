@@ -1,7 +1,7 @@
 // Pokémon TCG cards from pokemontcg.io (v2 API).
 // Free; an optional key (POKEMONTCG_API_KEY) raises the daily limit.
 
-import { createThrottle, getJson, isoDate, sortNumber } from '../lib.mjs';
+import { createThrottle, getJson, isoDate, positivePrice, sortNumber, withoutPrices } from '../lib.mjs';
 
 const API = 'https://api.pokemontcg.io/v2';
 const SOURCE = 'pokemontcg.io';
@@ -15,9 +15,31 @@ export function mapPokemonSet(set, now = new Date().toISOString()) {
     series: set.series ?? null,
     release_date: isoDate(set.releaseDate),
     card_count: set.total ?? set.printedTotal ?? null,
+    printed_total: set.printedTotal ?? null,
     logo_url: set.images?.logo ?? null,
     source: SOURCE,
     updated_at: now,
+  };
+}
+
+// The card's own printing first; reverse holos only when that's all there is.
+const TCGPLAYER_VARIANTS = ['normal', 'holofoil', '1stEditionHolofoil', 'unlimitedHolofoil', '1stEditionNormal', 'unlimited', '1stEdition', 'reverseHolofoil'];
+
+/** TCGplayer market price (USD) and Cardmarket trend price (EUR) from a pokemontcg.io card. */
+export function pokemonPrices(card) {
+  const variants = card.tcgplayer?.prices ?? {};
+  let usd = null;
+  for (const key of [...TCGPLAYER_VARIANTS, ...Object.keys(variants)]) {
+    usd = positivePrice(variants[key]?.market, variants[key]?.mid);
+    if (usd !== null) break;
+  }
+  const cardmarket = card.cardmarket?.prices ?? {};
+  const eur = positivePrice(cardmarket.trendPrice, cardmarket.averageSellPrice, cardmarket.avg30);
+  const updated = isoDate(card.tcgplayer?.updatedAt) ?? isoDate(card.cardmarket?.updatedAt);
+  return {
+    market_usd: usd,
+    market_eur: eur,
+    market_updated_at: (usd !== null || eur !== null) && updated ? `${updated}T00:00:00Z` : null,
   };
 }
 
@@ -32,6 +54,7 @@ export function mapPokemonCard(card, now = new Date().toISOString()) {
     rarity: card.rarity ?? null,
     image_small: card.images?.small ?? null,
     image_large: card.images?.large ?? null,
+    ...pokemonPrices(card),
     source: SOURCE,
     updated_at: now,
   };
@@ -68,7 +91,11 @@ async function storedCardCounts(db, apiSets) {
   return counts;
 }
 
-export async function syncPokemon(db, { apiKey, log = console.log } = {}) {
+/**
+ * Downloads cards for the sets that need them; with fullRefresh, every set
+ * (once a week, so prices for older sets stay current).
+ */
+export async function syncPokemon(db, { apiKey, log = console.log, fullRefresh = false, withPrices = true } = {}) {
   const headers = apiKey ? { 'X-Api-Key': apiKey } : {};
   // Without a key the API allows 30 requests a minute, so space them out.
   const throttle = createThrottle(apiKey ? 400 : 2100);
@@ -83,10 +110,11 @@ export async function syncPokemon(db, { apiKey, log = console.log } = {}) {
     apiSets.push(...body.data);
     if (apiSets.length >= body.totalCount || body.data.length === 0) break;
   }
-  await db.upsert('card_sets', apiSets.map((set) => mapPokemonSet(set)));
+  const setRows = apiSets.map((set) => mapPokemonSet(set));
+  await db.upsert('card_sets', withPrices ? setRows : withoutPrices(setRows));
 
-  const toRefresh = setsNeedingCards(apiSets, await storedCardCounts(db, apiSets));
-  log(`Pokémon: ${apiSets.length} sets, downloading cards for ${toRefresh.length}`);
+  const toRefresh = fullRefresh ? apiSets : setsNeedingCards(apiSets, await storedCardCounts(db, apiSets));
+  log(`Pokémon: ${apiSets.length} sets, downloading cards for ${toRefresh.length}${fullRefresh ? ' (weekly price refresh)' : ''}`);
 
   // Each set is saved as soon as it downloads, and one failing set doesn't stop
   // the rest. Anything missed is picked up again on the next run.
@@ -96,12 +124,13 @@ export async function syncPokemon(db, { apiKey, log = console.log } = {}) {
     try {
       const cards = [];
       for (let page = 1; ; page += 1) {
-        const query = `q=set.id:${encodeURIComponent(set.id)}&page=${page}&pageSize=250&select=id,name,number,rarity,set,images`;
+        const query = `q=set.id:${encodeURIComponent(set.id)}&page=${page}&pageSize=250&select=id,name,number,rarity,set,images,tcgplayer,cardmarket`;
         const body = await get(`${API}/cards?${query}`);
         cards.push(...body.data);
         if (cards.length >= body.totalCount || body.data.length === 0) break;
       }
-      cardTotal += await db.upsert('cards', cards.map((card) => mapPokemonCard(card)));
+      const rows = cards.map((card) => mapPokemonCard(card));
+      cardTotal += await db.upsert('cards', withPrices ? rows : withoutPrices(rows));
     } catch (error) {
       failedSets.push(set.id);
       log(`Pokémon: set ${set.id} failed: ${error instanceof Error ? error.message : error}`);

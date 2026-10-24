@@ -22,7 +22,7 @@ const NAV: NavItem[] = [
   { href: '/', label: 'Home', icon: 'home', isActive: (p) => p === '/' },
   { href: '/binder', label: 'Binder', icon: 'binder', isActive: (p) => p.startsWith('/binder') },
   { href: '/scan', label: 'Scan', icon: 'scan', isActive: (p) => p.startsWith('/scan') },
-  { href: '/market', label: 'Market', icon: 'market', isActive: (p) => p.startsWith('/market') },
+  { href: '/market', label: 'Market', icon: 'market', isActive: (p) => p.startsWith('/market') || p.startsWith('/prices') },
   { href: '/community', label: 'Community', icon: 'community', isActive: (p) => p.startsWith('/community') },
 ];
 

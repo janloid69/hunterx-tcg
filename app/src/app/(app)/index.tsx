@@ -11,6 +11,7 @@ import { ListingCard } from '@/components/ListingCard';
 import { Badge, Notice, ProgressBar, Screen, SectionHeader, Surface } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { getCollectionSummary, getRecentItems, getSetProgress } from '@/lib/data';
+import { getCollectionValue } from '@/lib/prices';
 import { greeting, percent, peso } from '@/lib/format';
 import { getListings } from '@/lib/market';
 import { discordInviteUrl } from '@/lib/supabase';
@@ -34,10 +35,10 @@ function useJoinNoticeHidden(): [boolean, () => void] {
   return [hidden, hide];
 }
 
-const QUICK_ACTIONS: { label: string; icon: IconName; href: '/add' | '/scan' | '/binder' | '/market' }[] = [
+const QUICK_ACTIONS: { label: string; icon: IconName; href: '/add' | '/scan' | '/prices' | '/market' }[] = [
   { label: 'Add', icon: 'plus', href: '/add' },
   { label: 'Scan', icon: 'scan', href: '/scan' },
-  { label: 'Binder', icon: 'binder', href: '/binder' },
+  { label: 'Prices', icon: 'chart', href: '/prices' },
   { label: 'Market', icon: 'market', href: '/market' },
 ];
 
@@ -45,6 +46,7 @@ export default function HomeScreen() {
   const { profile, roleSyncError } = useAuth();
   const [joinHidden, hideJoin] = useJoinNoticeHidden();
   const summary = useQuery(getCollectionSummary, []);
+  const value = useQuery(getCollectionValue, []);
   const recent = useQuery(() => getRecentItems(6), []);
   const progress = useQuery(getSetProgress, []);
   const fresh = useQuery(() => getListings({ limit: 8 }), []);
@@ -107,9 +109,20 @@ export default function HomeScreen() {
           <Stat value={summary.data?.sealed} label="Sealed" />
           <Stat value={summary.data?.items} label="Toys" />
         </View>
-        <AppText variant="small" color={colors.textFaint}>
-          Peso values arrive with the price guide in the next update.
-        </AppText>
+        {value.data && value.data.priced_cards > 0 ? (
+          <Pressable accessibilityRole="link" onPress={() => router.push('/binder')}>
+            <AppText variant="bodyStrong">
+              Worth about {peso(value.data.value_php)}{' '}
+              <AppText variant="small">
+                ({value.data.priced_cards} of {value.data.raw_cards} raw cards priced)
+              </AppText>
+            </AppText>
+          </Pressable>
+        ) : (
+          <AppText variant="small" color={colors.textFaint}>
+            Your binder’s peso value shows here once your cards have prices. See the price guide.
+          </AppText>
+        )}
       </Surface>
 
       <View style={styles.quickRow} accessibilityLabel="Quick actions">

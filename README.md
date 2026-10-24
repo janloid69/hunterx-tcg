@@ -3,8 +3,9 @@
 A free website (and later, iPhone and Android apps) where Filipino collectors track
 their cards and collectibles in pesos and trade with members of the HunterX Discord.
 
-Done so far: **Phase 1** (Discord sign-in, card database, binder) and **Phase 3** (the marketplace: listings,
-on-site messages and offers, vouches, reports and blocks, account deletion, and the Discord bot).
+Done so far: **Phase 1** (Discord sign-in, card database, binder), **Phase 2** (card scanner and peso price
+guide) and **Phase 3** (the marketplace: listings, on-site messages and offers, vouches, reports and blocks,
+account deletion, and the Discord bot).
 
 ## What's in this repo
 
@@ -36,7 +37,15 @@ on-site messages and offers, vouches, reports and blocks, account deletion, and 
 - **Delete account** from Profile (removes photos, then everything tied to the account).
 - **Discord bot:** posts listings and vouches in their channels, DMs members about messages and deals (they can
   turn this off on Profile), opens report tickets with mod buttons, and keeps badges in sync with Discord roles.
-- Scan and the peso price guide come next. Final sale prices are already being recorded for it.
+- **Peso price guide:** every card has a **HunterX price** (median of its recent raw Near Mint / Lightly Played
+  sales here: marketplace sales plus sales Discord members log from Facebook groups, meetups or shops) and a
+  **global price** (TCGplayer or Cardmarket, converted to pesos at the day's rate). Card pages show both, recent
+  sales and graded prices; the Price guide page searches cards and lists the latest sales. Listings and the sell
+  form show a price check, and the binder shows its estimated value.
+- **Scanner:** on the Scan page, point the phone camera at the number in the card's bottom corner (`OP01-120`,
+  `238/191`, `SSP EN 238/191`). The website reads it on the phone (Tesseract.js, nothing uploaded), finds the
+  card, shows its price and adds it to the binder. Bulk mode goes straight back to scanning for a stack of
+  cards. There's also "use a photo" and typing the number.
 
 ---
 
@@ -60,8 +69,9 @@ the code. They go only where these steps say.
 1. Create a project at <https://supabase.com> (the free plan is enough). Pick the Singapore region for the Philippines.
 2. **Create the database:** open **SQL Editor**, and run each file in `supabase/migrations/` in order, in a new
    query each time: `20261023000000_init.sql`, then `20261024000000_marketplace.sql`, then
-   `20261025000000_discord_bot.sql`. Each should say "Success. No rows returned". The marketplace file also
-   creates the `listing-photos` storage bucket and turns on live chat updates.
+   `20261025000000_discord_bot.sql`, then `20261026000000_price_guide.sql`. Each should say "Success. No rows
+   returned". The marketplace file also creates the `listing-photos` storage bucket and turns on live chat
+   updates.
 3. **Turn on Discord sign-in:** Authentication → Providers (Sign In / Providers) → **Discord**. Turn it on and paste the
    Client ID and Client Secret from step 1. Copy the **Callback URL** shown there
    (it looks like `https://<project-ref>.supabase.co/auth/v1/callback`).
@@ -139,13 +149,16 @@ supabase/tests/run_local.sh
 - **Hiding a game also pauses its nightly sync.** For example, Riftbound is hidden while its card source
   (Riftcodex) blocks GitHub's servers. To bring it back, run
   `update public.games set enabled = true where id = 'riftbound';` in Supabase's SQL Editor.
-- **Prices:** peso values come with the price guide in Phase 2. For now the site shows what members
-  paid.
+- **Prices refresh nightly.** One Piece prices update every night. Pokémon re-downloads every set once a week
+  (Sunday morning in the Philippines) to refresh older sets' prices; recent sets update nightly. To refresh
+  everything now, run **Sync card data** from the Actions tab with "Re-download every Pokémon set" ticked.
+- **Global prices are a reference.** They're US/EU online prices converted to pesos; local prices can be very
+  different, which is why the HunterX price comes first whenever a card has sold here.
 
 ## Roadmap
 
-1. **Foundations (this phase):** Discord sign-in, card database sync, binder and set progress.
-2. **Scan and prices:** card-number scanner, sales log, peso price guide, collection value.
+1. **Foundations (done):** Discord sign-in, card database sync, binder and set progress.
+2. **Scan and prices (done):** card-number scanner, sales log, peso price guide, collection value.
 3. **Market and trust (done):** listings and offers, chat and vouches, report/block/delete account, the Discord bot.
 4. **Website launch:** beta with members, domain and hosting, home-screen install, feedback round.
 

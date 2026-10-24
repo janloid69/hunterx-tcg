@@ -71,6 +71,7 @@ export default function MarketScreen() {
           MARKET
         </AppText>
         <View style={styles.titleActions}>
+          <Button label="Price guide" variant="outline" icon="chart" onPress={() => router.push('/prices')} />
           <Button label="My listings" variant="outline" onPress={() => router.push('/market/mine')} />
           <Button label="Sell" icon="plus" onPress={() => router.push('/market/new')} />
         </View>
@@ -136,6 +137,6 @@ export default function MarketScreen() {
 
 const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 },
-  titleActions: { flexDirection: 'row', gap: 8 },
+  titleActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 14, rowGap: 24 },
 });

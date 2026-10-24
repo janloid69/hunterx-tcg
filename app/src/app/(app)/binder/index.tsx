@@ -8,7 +8,8 @@ import { CardArt } from '@/components/CardArt';
 import { ChipRow } from '@/components/Chip';
 import { Notice, ProgressBar, Screen, SectionHeader, Surface } from '@/components/ui';
 import { getGames, getOtherCollectibles, getSetProgress } from '@/lib/data';
-import { percent } from '@/lib/format';
+import { peso, percent } from '@/lib/format';
+import { getCollectionValue } from '@/lib/prices';
 import { colors } from '@/lib/theme';
 import { useQuery } from '@/lib/useQuery';
 
@@ -16,6 +17,7 @@ export default function BinderScreen() {
   const games = useQuery(getGames, []);
   const progress = useQuery(getSetProgress, []);
   const others = useQuery(getOtherCollectibles, []);
+  const value = useQuery(getCollectionValue, []);
   const [gameFilter, setGameFilter] = useState('all');
 
   const gameOptions = useMemo(() => {
@@ -35,6 +37,22 @@ export default function BinderScreen() {
         </AppText>
         <Button label="Add" icon="plus" onPress={() => router.push('/add')} />
       </View>
+
+      {value.data && value.data.raw_cards > 0 ? (
+        <Surface style={{ gap: 4 }}>
+          <AppText variant="eyebrow">Worth about</AppText>
+          <AppText variant="display">{peso(value.data.value_php)}</AppText>
+          <AppText variant="small">
+            {value.data.priced_cards} of {value.data.raw_cards} raw cards priced. Uses the HunterX price, or the global
+            price when a card hasn’t sold here yet. Graded slabs and sealed items aren’t counted yet.
+          </AppText>
+          <Pressable accessibilityRole="link" onPress={() => router.push('/prices')} style={{ alignSelf: 'flex-start', minHeight: 32, justifyContent: 'center' }}>
+            <AppText variant="smallStrong" color={colors.accent}>
+              Open the price guide
+            </AppText>
+          </Pressable>
+        </Surface>
+      ) : null}
 
       <Surface style={styles.summary}>
         <SummaryStat value={totalOwned} label="Different cards" />

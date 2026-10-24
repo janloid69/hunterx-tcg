@@ -1,7 +1,7 @@
 // One Piece Card Game cards from optcgapi.com (free, community-run).
 // One request per run: the author asks people not to make many calls a day.
 
-import { getJson, sortNumber, withCardCounts } from '../lib.mjs';
+import { getJson, isoDate, positivePrice, sortNumber, withCardCounts, withoutPrices } from '../lib.mjs';
 
 const API = 'https://optcgapi.com/api';
 const SOURCE = 'optcgapi.com';
@@ -16,6 +16,17 @@ export function setCodeFromCardCode(code) {
 /** 'Romance Dawn [OP-01]' -> 'Romance Dawn' */
 function cleanSetName(name) {
   return String(name ?? '').replace(/\s*\[[^\]]*\]\s*$/, '').replace(/^-+|-+$/g, '').trim();
+}
+
+/** TCGplayer price (USD) that optcgapi.com includes with each card, when it has one. */
+export function onePiecePrices(row, now = new Date().toISOString()) {
+  const usd = positivePrice(row.market_price, row.marketPrice, row.inventory_price, row.inventoryPrice);
+  const scraped = isoDate(row.date_scraped ?? row.dateScraped);
+  return {
+    market_usd: usd,
+    market_eur: null,
+    market_updated_at: usd === null ? null : scraped ? `${scraped}T00:00:00Z` : now,
+  };
 }
 
 /**
@@ -62,6 +73,7 @@ export function mapOnePieceCards(rows, now = new Date().toISOString()) {
       rarity: row.rarity ?? null,
       image_small: row.card_image ?? row.image ?? null,
       image_large: row.card_image ?? row.image ?? null,
+      ...onePiecePrices(row, now),
       source: SOURCE,
       updated_at: now,
     });
@@ -71,12 +83,14 @@ export function mapOnePieceCards(rows, now = new Date().toISOString()) {
   return { sets: withCardCounts([...sets.values()], cardList), cards: cardList };
 }
 
-export async function syncOnePiece(db, { log = console.log } = {}) {
+export async function syncOnePiece(db, { log = console.log, withPrices = true } = {}) {
   const rows = await getJson(`${API}/allSetCards/`);
   if (!Array.isArray(rows)) throw new Error('optcgapi.com allSetCards did not return a list');
   const { sets, cards } = mapOnePieceCards(rows);
   await db.upsert('card_sets', sets);
-  await db.upsert('cards', cards);
+  await db.upsert('cards', withPrices ? cards : withoutPrices(cards));
+  const priced = cards.filter((card) => card.market_usd !== null).length;
+  if (withPrices) log(`One Piece: ${priced} of ${cards.length} cards have a TCGplayer price`);
   log(`One Piece: saved ${sets.length} sets and ${cards.length} cards`);
   return { sets: sets.length, cards: cards.length };
 }

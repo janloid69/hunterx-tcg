@@ -7,17 +7,25 @@
 // switched on in the games table (games.enabled), so hiding a game on the site
 // also pauses its sync. Runs nightly from .github/workflows/sync-cards.yml.
 // One failing source doesn't stop the others.
+//
+// Also refreshes exchange rates and global card prices for the price guide.
+// Pokémon re-downloads every set once a week (Saturday night UTC, Sunday
+// morning in the Philippines) so older sets' prices stay current, or whenever
+// FULL_REFRESH=true.
 
 import { createDb } from './lib.mjs';
+import { syncFxRates } from './sources/fx.mjs';
 import { syncOnePiece } from './sources/one-piece.mjs';
 import { syncPokemon } from './sources/pokemon.mjs';
 import { syncRiftbound } from './sources/riftbound.mjs';
 
+const fullRefresh = process.env.FULL_REFRESH === 'true' || new Date().getUTCDay() === 6;
+
 // Quick sources first, so their cards show up while Pokémon is still loading.
 const SOURCES = {
-  'one-piece': (db) => syncOnePiece(db),
+  'one-piece': (db, options) => syncOnePiece(db, options),
   riftbound: (db) => syncRiftbound(db),
-  pokemon: (db) => syncPokemon(db, { apiKey: process.env.POKEMONTCG_API_KEY }),
+  pokemon: (db, options) => syncPokemon(db, { ...options, apiKey: process.env.POKEMONTCG_API_KEY, fullRefresh }),
 };
 
 // In GitHub Actions, results also appear as notes on the run's summary page.
@@ -51,10 +59,27 @@ if (games.length === 0) {
 }
 
 let failures = 0;
+
+// Prices need the price guide migration (20261026000000_price_guide.sql).
+const withPrices = await db.hasColumn('cards', 'market_usd');
+if (!withPrices) {
+  const message = 'Prices are off: run supabase/migrations/20261026000000_price_guide.sql in Supabase to turn on the price guide.';
+  console.log(message);
+  report('warning', 'prices', message);
+} else {
+  try {
+    await syncFxRates(db);
+  } catch (error) {
+    const message = `Couldn't update exchange rates (yesterday's stay in use): ${error instanceof Error ? error.message : error}`;
+    console.error(message);
+    report('warning', 'exchange rates', message);
+  }
+}
+
 for (const game of games) {
   const started = Date.now();
   try {
-    const result = await SOURCES[game](db);
+    const result = await SOURCES[game](db, { withPrices });
     const seconds = Math.round((Date.now() - started) / 1000);
     console.log(`✓ ${game} done in ${seconds}s`);
     const totalCards = await db.count('cards', `game_id=eq.${game}`).catch(() => null);

@@ -32,7 +32,11 @@ export type IconName =
   | 'truck'
   | 'pin'
   | 'shield'
-  | 'cash';
+  | 'cash'
+  | 'chart'
+  | 'flash'
+  | 'zoom'
+  | 'keyboard';
 
 function shapes(name: IconName) {
   switch (name) {
@@ -192,6 +196,24 @@ function shapes(name: IconName) {
         <>
           <Rect x={3} y={6} width={18} height={12} rx={2} />
           <Circle cx={12} cy={12} r={2.5} />
+        </>
+      );
+    case 'chart':
+      return <Path d="M3 17l6-6 4 4 8-8M15 7h6v6" />;
+    case 'flash':
+      return <Path d="M13 2L4 14h7l-1 8 9-12h-7z" />;
+    case 'zoom':
+      return (
+        <>
+          <Circle cx={10.5} cy={10.5} r={6.5} />
+          <Path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6" />
+        </>
+      );
+    case 'keyboard':
+      return (
+        <>
+          <Rect x={2.5} y={6} width={19} height={12} rx={2} />
+          <Path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10" />
         </>
       );
   }

@@ -6,7 +6,10 @@
     "set_name": "Romance Dawn",
     "rarity": "L",
     "card_image_id": "OP01-001",
-    "card_image": "https://optcgapi.com/media/static/Card_Images/OP01-001.jpg"
+    "card_image": "https://optcgapi.com/media/static/Card_Images/OP01-001.jpg",
+    "market_price": 1.25,
+    "inventory_price": 0.99,
+    "date_scraped": "2026-10-22"
   },
   {
     "card_set_id": "OP01-001",
@@ -15,7 +18,9 @@
     "set_name": "Romance Dawn",
     "rarity": "L",
     "card_image_id": "OP01-001_p1",
-    "card_image": "https://optcgapi.com/media/static/Card_Images/OP01-001_p1.jpg"
+    "card_image": "https://optcgapi.com/media/static/Card_Images/OP01-001_p1.jpg",
+    "market_price": 48.5,
+    "date_scraped": "2026-10-22"
   },
   {
     "card_set_id": "OP01-120",
@@ -24,7 +29,8 @@
     "set_name": "Romance Dawn",
     "rarity": "SEC",
     "card_image_id": "OP01-120",
-    "card_image": "https://optcgapi.com/media/static/Card_Images/OP01-120.jpg"
+    "card_image": "https://optcgapi.com/media/static/Card_Images/OP01-120.jpg",
+    "inventory_price": 210.0
   },
   {
     "card_set_id": "EB01-001",
@@ -32,5 +38,7 @@
     "set_name": "Memorial Collection [EB-01]",
     "rarity": "L"
   },
-  { "card_name": "Broken row without a code" }
+  {
+    "card_name": "Broken row without a code"
+  }
 ]

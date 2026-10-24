@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { CardArt } from '@/components/CardArt';
 import { Chip, ChipRow } from '@/components/Chip';
 import { Icon } from '@/components/Icon';
+import { PriceLine } from '@/components/Prices';
 import { Notice, Screen, Stepper, Surface, TextField } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { getCard, getCatalogItem, getGames, searchCards, searchCatalog } from '@/lib/data';
@@ -22,6 +23,7 @@ import {
   uploadListingPhoto,
 } from '@/lib/market';
 import { pickPhotos, type PickedPhoto } from '@/lib/photos';
+import { getCardPrice } from '@/lib/prices';
 import { discordInviteUrl, errorMessage } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import type { CardWithSet, CatalogItem, Condition, Grader, ListingKind, PaymentMethod } from '@/lib/types';
@@ -298,6 +300,8 @@ function ListingForm({
   const [description, setDescription] = useState(initial?.description ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const priceCardId = initial ? initial.card_id : subject?.source === 'card' ? subject.card.id : null;
+  const priceGuide = useQuery(() => (priceCardId ? getCardPrice(priceCardId) : Promise.resolve(null)), [priceCardId]);
 
   const isCard = initial ? !!initial.card_id : subject?.source === 'card';
   const priceValue = parsePeso(price);
@@ -454,6 +458,7 @@ function ListingForm({
       <View style={styles.row}>
         <View style={{ flex: 1 }}>
           <TextField label="Price (₱)" placeholder="e.g. 1500" value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
+          {priceCardId && kind === 'card' ? <PriceLine price={priceGuide.data} /> : null}
         </View>
         <View style={styles.field}>
           <AppText variant="label" color={colors.textSoft}>Quantity</AppText>

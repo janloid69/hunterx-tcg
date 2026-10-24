@@ -61,12 +61,13 @@ function cleanSearch(term: string): string {
 
 export async function getListings(options: {
   gameId?: string;
+  cardId?: string;
   search?: string;
   sort?: ListingSort;
   limit?: number;
   offset?: number;
 }): Promise<ListingWithRefs[]> {
-  const { gameId, search = '', sort = 'newest', limit = 48, offset = 0 } = options;
+  const { gameId, cardId, search = '', sort = 'newest', limit = 48, offset = 0 } = options;
   let query = supabase
     .from('listings')
     .select(LISTING_WITH_REFS)
@@ -74,6 +75,7 @@ export async function getListings(options: {
     .is('hidden_at', null);
 
   if (gameId && gameId !== 'all') query = query.eq('game_id', gameId);
+  if (cardId) query = query.eq('card_id', cardId);
   const term = cleanSearch(search);
   if (term.length >= 2) query = query.ilike('title', `%${term}%`);
 

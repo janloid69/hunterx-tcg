@@ -7,6 +7,7 @@ import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { CardArt } from '@/components/CardArt';
 import { Icon } from '@/components/Icon';
+import { PriceLine } from '@/components/Prices';
 import { ReportSheet, SafetyTips } from '@/components/Safety';
 import { ConfirmSheet, Sheet } from '@/components/Sheet';
 import { RatingSummary, StarPicker } from '@/components/Stars';
@@ -28,6 +29,7 @@ import {
   setListingStatus,
   startConversation,
 } from '@/lib/market';
+import { getCardPrice } from '@/lib/prices';
 import { errorMessage } from '@/lib/supabase';
 import { colors, fonts, wideBreakpoint } from '@/lib/theme';
 import type { ListingWithRefs, MemberSummary } from '@/lib/types';
@@ -48,6 +50,8 @@ export default function ListingScreen() {
   const isBuyer = listing.data?.buyer_id === me;
   const showVouch = listing.data?.status === 'sold' && (isSeller ? !!listing.data.buyer_id : isBuyer);
   const myVouch = useQuery(() => (showVouch ? getMyVouch(id) : Promise.resolve(null)), [showVouch, id]);
+  const cardId = listing.data?.card_id ?? null;
+  const cardPrice = useQuery(() => (cardId ? getCardPrice(cardId) : Promise.resolve(null)), [cardId]);
   // The seller card's sold count and vouches change along with the listing.
   const refresh = () => {
     listing.reload();
@@ -176,6 +180,21 @@ export default function ListingScreen() {
           </AppText>
           <AppText variant="display">{peso(item.price)}</AppText>
           <AppText variant="small">Listed {timeAgo(item.created_at)}</AppText>
+          {item.card_id && item.kind === 'card' ? (
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="Open this card's price guide"
+              onPress={() => router.push({ pathname: '/card/[id]', params: { id: item.card_id! } })}
+              style={styles.priceCheck}
+            >
+              <Icon name="chart" size={18} color={colors.accent} />
+              <View style={{ flex: 1 }}>
+                <AppText variant="smallStrong">Price check</AppText>
+                <PriceLine price={cardPrice.data} />
+              </View>
+              <Icon name="chevronRight" size={16} color={colors.textFaint} strokeWidth={2} />
+            </Pressable>
+          ) : null}
 
           {isSeller ? (
             <SellerActions
@@ -579,6 +598,17 @@ function VouchSheet({
 
 const styles = StyleSheet.create({
   back: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, alignSelf: 'flex-start' },
+  priceCheck: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginTop: 4,
+  },
   top: { gap: 20 },
   topWide: { flexDirection: 'row', alignItems: 'flex-start' },
   mainImage: { borderRadius: 16, backgroundColor: '#16161A' },
