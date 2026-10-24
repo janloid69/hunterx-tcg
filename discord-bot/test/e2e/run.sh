@@ -17,10 +17,13 @@ PGRST_DB_CHANNEL_ENABLED=false \
 pid=$!
 trap 'kill $pid 2>/dev/null || true; rm -f "$log"' EXIT
 
-for _ in $(seq 1 100); do
-  if curl -sf "http://localhost:$port/" >/dev/null 2>&1; then break; fi
-  if ! kill -0 "$pid" 2>/dev/null; then cat "$log"; exit 1; fi
-  sleep 0.1
+# Wait up to a minute for PostgREST to load the schema.
+ready=false
+for _ in $(seq 1 300); do
+  if curl -sf "http://localhost:$port/" >/dev/null 2>&1; then ready=true; break; fi
+  if ! kill -0 "$pid" 2>/dev/null; then echo "::error title=PostgREST::PostgREST stopped"; cat "$log"; exit 1; fi
+  sleep 0.2
 done
+if [ "$ready" != true ]; then echo "::error title=PostgREST::PostgREST didn't start within a minute"; cat "$log"; exit 1; fi
 
 POSTGREST_URL="http://localhost:$port" node "$here/run.mjs" || { echo "--- PostgREST log"; cat "$log"; exit 1; }

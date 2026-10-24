@@ -34,7 +34,17 @@ const db = createDb({
   url: 'http://supabase.test',
   secretKey: 'sb_secret_e2e',
   fetchImpl: (url, init) => fetch(url.replace('http://supabase.test/rest/v1', postgrest), init),
-  sleep: async () => {},
+  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, Math.min(ms, 300))),
+});
+
+// In GitHub Actions, show why the check failed on the run's summary page.
+process.on('uncaughtException', (error) => {
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    const text = `${error.message}\n${logs.slice(-8).join('\n')}`.replace(/\r?\n/g, '%0A').slice(0, 3000);
+    console.log(`::error title=Discord bot end-to-end check::${text}`);
+  }
+  console.error(error);
+  process.exit(1);
 });
 const store = createStore(db);
 const discord = fakeDiscord();
@@ -50,8 +60,8 @@ async function drain() {
   for (;;) {
     if ((await worker.runOnce()) === 0) break;
   }
-  const stuck = await db.select('bot_outbox', 'processed_at=is.null&select=kind,event,last_error');
-  assert.deepEqual(stuck, [], 'every event should be handled without errors');
+  const stuck = await db.select('bot_outbox', 'processed_at=is.null&select=kind,event,attempts,available_at,last_error');
+  assert.deepEqual(stuck, [], `every event should be handled without errors: ${JSON.stringify(stuck)}`);
 }
 
 const sent = (channelId) => discord.named('sendMessage').filter((call) => call[1] === channelId);
