@@ -96,6 +96,8 @@ await check('the page itself sets up the home-screen app and dark background', a
     'name="apple-mobile-web-app-status-bar-style"',
     'rel="apple-touch-icon"',
     'viewport-fit=cover',
+    'property="og:image"',
+    'name="twitter:card"',
     '#0E0E10',
     '<script src=',
   ]) {

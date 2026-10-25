@@ -37,6 +37,7 @@ jobs:
           test -f dist/manifest.webmanifest
           test -f dist/icons/icon-512.png
           test -f dist/icons/apple-touch-icon.png
+          test -f dist/og-image.png
       - name: Website opens in Chrome (signed out, slow fonts, signed in)
         env:
           PLAYWRIGHT_MODULE: /tmp/playwright/node_modules/playwright-core/index.mjs
