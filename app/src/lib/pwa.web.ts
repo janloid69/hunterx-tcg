@@ -1,5 +1,6 @@
-// Lets members add HunterX to their phone's home screen: links the web app
-// manifest and icons, and keeps Chrome's install offer for an Install button.
+// Lets members add HunterX to their phone's home screen and keeps Chrome's
+// install offer for an Install button. The manifest, icons and iPhone tags are
+// in public/index.html; the tags below only fill in anything that's missing.
 
 type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> };
 

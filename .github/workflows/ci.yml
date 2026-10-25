@@ -37,6 +37,13 @@ jobs:
           test -f dist/manifest.webmanifest
           test -f dist/icons/icon-512.png
           test -f dist/icons/apple-touch-icon.png
+      - name: Website opens in Chrome (signed out, slow fonts, signed in)
+        env:
+          PLAYWRIGHT_MODULE: /tmp/playwright/node_modules/playwright-core/index.mjs
+          CHROME_CHANNEL: chrome
+        run: |
+          npm install --prefix /tmp/playwright --no-audit --no-fund playwright-core@1.63.0
+          node tests/site-smoke.mjs dist
       - uses: actions/upload-artifact@v6
         with:
           name: website

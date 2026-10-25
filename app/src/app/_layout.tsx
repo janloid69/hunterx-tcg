@@ -9,7 +9,7 @@ import {
 import { useFonts } from 'expo-font';
 import { Stack, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -49,7 +49,13 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   );
 }
 
-export default function RootLayout() {
+// On the web, wait at most this long for the fonts before showing the site.
+// Text starts in the phone's own font and switches when the files arrive.
+// (The iPhone home-screen app sometimes never reports them as loaded, and
+// expo-font would otherwise wait 12 seconds.)
+const WEB_FONT_WAIT_MS = 2500;
+
+function useFontsReady(): boolean {
   const [fontsLoaded, fontError] = useFonts({
     Anton_400Regular,
     Archivo_400Regular,
@@ -58,6 +64,17 @@ export default function RootLayout() {
     Archivo_700Bold,
     Archivo_800ExtraBold,
   });
+  const [waitedEnough, setWaitedEnough] = useState(false);
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const timer = setTimeout(() => setWaitedEnough(true), WEB_FONT_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  return fontsLoaded || fontError !== null || waitedEnough;
+}
+
+export default function RootLayout() {
+  const fontsReady = useFontsReady();
   useEffect(() => {
     setupPwa();
   }, []);
@@ -66,7 +83,7 @@ export default function RootLayout() {
     <SafeAreaProvider style={{ backgroundColor: colors.bg }}>
       <AuthProvider>
         <StatusBar style="light" />
-        {fontsLoaded || fontError ? <RootNavigator /> : <Loading />}
+        {fontsReady ? <RootNavigator /> : <Loading />}
       </AuthProvider>
     </SafeAreaProvider>
   );
@@ -77,12 +94,15 @@ function RootNavigator() {
   if (loading) return <Loading />;
   const signedIn = session !== null;
 
+  // Each guard says where to send people. Without it, Expo Router picks the
+  // first open page by name length, which put signed-out visitors on House
+  // rules instead of sign-in.
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
-      <Stack.Protected guard={signedIn}>
+      <Stack.Protected guard={signedIn} redirectTo="/sign-in">
         <Stack.Screen name="(app)" />
       </Stack.Protected>
-      <Stack.Protected guard={!signedIn}>
+      <Stack.Protected guard={!signedIn} redirectTo="/">
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
       <Stack.Screen name="rules" />

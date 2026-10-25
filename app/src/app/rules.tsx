@@ -11,7 +11,6 @@ import { useAuth } from '@/lib/auth';
 import { discordInviteUrl } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 
-const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
 const UPDATED = 'October 24, 2026';
 
@@ -79,22 +78,28 @@ const PRIVACY: { title: string; body: string }[] = [
 export default function RulesScreen() {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
+  // Opened from a link: go back. Opened directly (or from the home-screen
+  // app): go to Home, or to sign-in when signed out.
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace(session ? '/' : '/sign-in');
+  };
   // Signed in: the usual header and tabs, so there's always a way out.
   if (session) {
     return (
       <AppShell>
-        <RulesContent />
+        <RulesContent goBack={goBack} />
       </AppShell>
     );
   }
   return (
     <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: colors.bg }}>
-      <RulesContent />
+      <RulesContent goBack={goBack} />
     </View>
   );
 }
 
-function RulesContent() {
+function RulesContent({ goBack }: { goBack: () => void }) {
   return (
     <Screen>
       <Pressable accessibilityRole="link" onPress={goBack} style={styles.back}>
