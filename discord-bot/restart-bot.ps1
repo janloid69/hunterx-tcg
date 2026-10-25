@@ -1,22 +1,35 @@
-# Restarts only the HunterX bot (for example after "git pull"). The start
-# script brings it back about 15 seconds later with the new code.
+# Restarts the HunterX bot (for example after "git pull"), or starts it if it
+# isn't running. Only touches the bot's own Node process.
 #
-#   powershell -ExecutionPolicy Bypass -File .\restart-bot.ps1
+#   powershell -ExecutionPolicy Bypass -File .\discord-bot\restart-bot.ps1
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$pidFile = Join-Path $here 'bot.pid'
+$taskName = 'HunterX Discord bot'
 
-if (-not (Test-Path $pidFile)) {
-  Write-Host 'The bot is not running (no bot.pid). Start it with start-bot.cmd or restart the server.'
+# Find the bot: bot.pid first, else a node process running "--env-file=.env index.mjs".
+$ids = @()
+$pidFile = Join-Path $here 'bot.pid'
+if (Test-Path $pidFile) {
+  $process = Get-Process -Id ([int](Get-Content $pidFile)) -ErrorAction SilentlyContinue
+  if ($process -and $process.ProcessName -eq 'node') { $ids += $process.Id }
+}
+if ($ids.Count -eq 0) {
+  $ids = @(Get-CimInstance Win32_Process -Filter "name='node.exe'" |
+    Where-Object { $_.CommandLine -like '*--env-file=.env*index.mjs*' } |
+    ForEach-Object { $_.ProcessId })
+}
+foreach ($id in $ids) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue }
+
+$task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+if (-not $task) {
+  Write-Host "The startup task isn't installed. Run install-startup-task.ps1 (as Administrator) from the discord-bot folder."
   exit 1
 }
-
-$botPid = [int](Get-Content $pidFile)
-$process = Get-Process -Id $botPid -ErrorAction SilentlyContinue
-if ($process -and $process.ProcessName -eq 'node') {
-  Stop-Process -Id $botPid -Force
-  Write-Host 'Stopped the bot. It starts again in about 15 seconds.'
+if ($task.State -ne 'Running') {
+  Start-ScheduledTask -TaskName $taskName
+  Write-Host 'Started the bot. Check the newest file in the logs folder in a few seconds.'
+} elseif ($ids.Count -gt 0) {
+  Write-Host 'Stopped the bot. It starts again with the new code in about 15 seconds.'
 } else {
-  Remove-Item $pidFile -Force
-  Write-Host 'The bot was not running. Start it with start-bot.cmd or restart the server.'
+  Write-Host 'The startup task is running but the bot process was not found; it should start again within 15 seconds.'
 }
