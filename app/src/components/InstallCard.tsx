@@ -10,7 +10,11 @@ import { Icon } from './Icon';
 import { Surface } from './ui';
 
 const STEPS = {
-  ios: ['Tap the Share button at the bottom of Safari.', 'Choose “Add to Home Screen”, then Add.'],
+  ios: [
+    'Tap Share. In Safari it’s at the bottom, or inside the ⋯ menu beside the address bar on newer iPhones. In Chrome it’s at the right of the address bar.',
+    'Scroll down the list and tap “Add to Home Screen”.',
+    'If you see “Open as Web App”, leave it on. Tap Add, then open HunterX from its new icon.',
+  ],
   android: ['Tap ⋮ at the top right of Chrome.', 'Choose “Install app” or “Add to Home screen”.'],
   desktop: ['In Chrome or Edge, click the install icon at the right end of the address bar.'],
 };

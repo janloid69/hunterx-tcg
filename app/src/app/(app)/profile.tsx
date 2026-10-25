@@ -108,6 +108,7 @@ export default function ProfileScreen() {
           onValueChange={toggleDms}
           trackColor={{ false: colors.surface3, true: colors.accent }}
           thumbColor={colors.text}
+          {...({ activeThumbColor: colors.text } as object)}
         />
       </Surface>
 
