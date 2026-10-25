@@ -178,6 +178,35 @@ await check('signed in, House rules has the tabs and Back goes to Home', async (
   await page.waitForURL((url) => url.pathname === '/', { timeout: WAIT });
 });
 
+await check('signed in but not in the Discord, Sell asks them to join; "I’ve joined" unlocks it', async (page, context) => {
+  await signIn(context);
+  let inGuild = false;
+  await context.route(/\/rest\/v1\/profiles/, (route) => {
+    const profile = {
+      id: userId,
+      discord_id: '500000000000000099',
+      username: 'smoke',
+      display_name: 'Smoke Test',
+      avatar_url: null,
+      in_guild: inGuild,
+      is_verified_seller: false,
+      is_mod: false,
+      discord_dms: true,
+      created_at: new Date().toISOString(),
+    };
+    const single = (route.request().headers().accept ?? '').includes('vnd.pgrst.object');
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? profile : [profile]) });
+  });
+  await page.goto(`${site}/market/new`);
+  await visible(page, 'Want to be a seller? Join the HunterX Discord!');
+  // The bot marks them as a member after they join the server.
+  inGuild = true;
+  await page.getByText('I’ve joined', { exact: true }).click();
+  await page
+    .getByText('Want to be a seller? Join the HunterX Discord!', { exact: true })
+    .waitFor({ state: 'detached', timeout: WAIT });
+});
+
 await browser.close();
 server.close();
 console.log(failures ? `${failures} check(s) failed` : 'All website checks passed');

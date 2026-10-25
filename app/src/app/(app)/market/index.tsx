@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, useWindowDimensions, View } from 'react-
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ChipRow } from '@/components/Chip';
+import { JoinToSell } from '@/components/JoinToSell';
 import { ListingCard } from '@/components/ListingCard';
 import { Notice, Screen, Surface, TextField } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
@@ -77,13 +78,7 @@ export default function MarketScreen() {
         </View>
       </View>
 
-      {profile && !profile.in_guild ? (
-        <Notice tone="discord">
-          <AppText variant="small" color={colors.discordText}>
-            You can browse and message sellers. Selling is for HunterX Discord members.
-          </AppText>
-        </Notice>
-      ) : null}
+      {profile && !profile.in_guild ? <JoinToSell compact /> : null}
 
       <TextField
         label="Search listings"

@@ -1,12 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { CardArt } from '@/components/CardArt';
 import { Chip, ChipRow } from '@/components/Chip';
 import { Icon } from '@/components/Icon';
+import { JoinToSell } from '@/components/JoinToSell';
 import { PriceLine } from '@/components/Prices';
 import { Notice, Screen, Stepper, Surface, TextField } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
@@ -24,7 +25,7 @@ import {
 } from '@/lib/market';
 import { pickPhotos, type PickedPhoto } from '@/lib/photos';
 import { getCardPrice } from '@/lib/prices';
-import { discordInviteUrl, errorMessage } from '@/lib/supabase';
+import { errorMessage } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import type { CardWithSet, CatalogItem, Condition, Grader, ListingKind, PaymentMethod } from '@/lib/types';
 import { useQuery } from '@/lib/useQuery';
@@ -77,14 +78,7 @@ export default function NewListingScreen() {
         <AppText variant="displaySmall" accessibilityRole="header">
           SELL
         </AppText>
-        <Notice tone="discord">
-          <AppText variant="bodyStrong">Selling is for HunterX Discord members</AppText>
-          <AppText variant="small" color={colors.discordText}>
-            So every seller is someone the mods know. Join the server, then sign out and back in here so the site
-            sees your membership.
-          </AppText>
-          <Button label="Join the Discord" variant="discord" onPress={() => Linking.openURL(discordInviteUrl)} />
-        </Notice>
+        <JoinToSell />
       </Screen>
     );
   }
