@@ -209,6 +209,42 @@ await check('signed in but not in the Discord, Sell asks them to join; "I’ve j
     .waitFor({ state: 'detached', timeout: WAIT });
 });
 
+await check('binder: tap a toy, then remove it', async (page, context) => {
+  await signIn(context);
+  let removed = false;
+  const toy = {
+    id: 'aaaaaaaa-0000-4000-8000-000000000001',
+    card_id: null,
+    catalog_item_id: 'bbbbbbbb-0000-4000-8000-000000000001',
+    kind: 'item',
+    quantity: 2,
+    condition: 'NM',
+    grader: null,
+    grade: null,
+    price_paid: null,
+    created_at: new Date().toISOString(),
+    card: null,
+    item: { id: 'bbbbbbbb-0000-4000-8000-000000000001', name: 'Smoke Test Porsche 930', brand: 'Hot Wheels', line: 'Red Line Club', game_id: 'toys', kind: 'toy', image_url: null },
+  };
+  await context.route(/\/rest\/v1\/collection_items/, (route) => {
+    const method = route.request().method();
+    if (method === 'DELETE') {
+      removed = true;
+      return route.fulfill({ status: 204, body: '' });
+    }
+    if (method !== 'GET') return route.fulfill({ status: 204, body: '' });
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(removed ? [] : [toy]) });
+  });
+  await page.goto(`${site}/binder`);
+  await visible(page, 'Smoke Test Porsche 930');
+  await page.getByText('Smoke Test Porsche 930', { exact: true }).first().click();
+  await visible(page, 'How many you have');
+  await page.getByText('Remove from binder', { exact: true }).click();
+  await page.getByText('Remove', { exact: true }).click();
+  await page.getByText('Smoke Test Porsche 930', { exact: true }).first().waitFor({ state: 'detached', timeout: WAIT });
+  if (!removed) throw new Error('no delete request was sent');
+});
+
 await browser.close();
 server.close();
 console.log(failures ? `${failures} check(s) failed` : 'All website checks passed');

@@ -1,16 +1,20 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { CardArt } from '@/components/CardArt';
 import { ChipRow } from '@/components/Chip';
-import { Notice, ProgressBar, Screen, SectionHeader, Surface } from '@/components/ui';
-import { getGames, getOtherCollectibles, getSetProgress } from '@/lib/data';
+import { Icon } from '@/components/Icon';
+import { Sheet } from '@/components/Sheet';
+import { Notice, ProgressBar, Screen, SectionHeader, Stepper, Surface } from '@/components/ui';
+import { getGames, getOtherCollectibles, getSetProgress, removeFromCollection, setQuantity } from '@/lib/data';
 import { peso, percent } from '@/lib/format';
 import { getCollectionValue } from '@/lib/prices';
+import { errorMessage } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
+import type { CollectionItemWithRefs } from '@/lib/types';
 import { useQuery } from '@/lib/useQuery';
 
 export default function BinderScreen() {
@@ -19,6 +23,8 @@ export default function BinderScreen() {
   const others = useQuery(getOtherCollectibles, []);
   const value = useQuery(getCollectionValue, []);
   const [gameFilter, setGameFilter] = useState('all');
+  const [openItemId, setOpenItemId] = useState<string | null>(null);
+  const openItem = others.data?.find((entry) => entry.id === openItemId) ?? null;
 
   const gameOptions = useMemo(() => {
     const tcgs = (games.data ?? []).filter((game) => game.kind === 'tcg');
@@ -130,27 +136,141 @@ export default function BinderScreen() {
           <SectionHeader title="Toys & sealed" action={{ label: 'Add more', onPress: () => router.push('/add?tab=other') }} />
           <Surface style={styles.listSurface}>
             {others.data.map((entry, index) => (
-              <View key={entry.id} style={[styles.otherRow, index > 0 ? styles.rowDivider : null]}>
+              <Pressable
+                key={entry.id}
+                accessibilityRole="button"
+                accessibilityHint="Change the quantity, sell or remove"
+                onPress={() => setOpenItemId(entry.id)}
+                style={({ pressed }) => [styles.otherRow, index > 0 ? styles.rowDivider : null, pressed ? styles.pressed : null]}
+              >
                 <CardArt gameId={entry.item?.game_id} imageUrl={entry.item?.image_url} width={44} height={56} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <AppText variant="bodyStrong" numberOfLines={1}>
                     {entry.item?.name ?? 'Item'}
                   </AppText>
                   <AppText variant="small" numberOfLines={1}>
-                    {[entry.kind === 'sealed' ? 'Sealed' : 'Toy', entry.item?.brand, entry.item?.line]
-                      .filter(Boolean)
-                      .join(' · ')}
+                    {itemDetails(entry)}
                   </AppText>
                 </View>
                 <AppText variant="label" color={colors.textMuted}>
                   ×{entry.quantity}
                 </AppText>
-              </View>
+                <Icon name="chevronRight" size={18} color={colors.textFaint} strokeWidth={2} />
+              </Pressable>
             ))}
           </Surface>
         </View>
       ) : null}
+
+      <ItemSheet
+        entry={openItem}
+        onClose={() => setOpenItemId(null)}
+        onChanged={others.reload}
+        onRemoved={() => {
+          setOpenItemId(null);
+          others.reload();
+        }}
+      />
     </Screen>
+  );
+}
+
+const itemDetails = (entry: CollectionItemWithRefs) =>
+  [entry.kind === 'sealed' ? 'Sealed' : 'Toy', entry.item?.brand, entry.item?.line].filter(Boolean).join(' · ');
+
+/** A toy or sealed item in the binder: how many, sell it, or remove it. */
+function ItemSheet({
+  entry,
+  onClose,
+  onChanged,
+  onRemoved,
+}: {
+  entry: CollectionItemWithRefs | null;
+  onClose: () => void;
+  onChanged: () => void;
+  onRemoved: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const entryId = entry?.id ?? null;
+
+  useEffect(() => {
+    setConfirming(false);
+    setError(null);
+  }, [entryId]);
+
+  async function run(action: () => Promise<void>, after: () => void) {
+    setBusy(true);
+    setError(null);
+    try {
+      await action();
+      after();
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const name = entry?.item?.name ?? 'Item';
+  return (
+    <Sheet visible={entry !== null} title={name} onClose={onClose}>
+      {entry ? (
+        <>
+          <View style={styles.sheetTop}>
+            <CardArt gameId={entry.item?.game_id} imageUrl={entry.item?.image_url} width={64} height={82} />
+            <AppText variant="small" style={{ flex: 1 }}>
+              {itemDetails(entry)}
+            </AppText>
+          </View>
+
+          <View style={styles.quantityRow}>
+            <AppText variant="bodyStrong" style={{ flex: 1 }}>
+              How many you have
+            </AppText>
+            <Stepper
+              label="quantity"
+              value={entry.quantity}
+              onChange={(next) => run(() => setQuantity(entry.id, next), onChanged)}
+            />
+          </View>
+
+          {error ? <Notice tone="error">{error}</Notice> : null}
+
+          {entry.item ? (
+            <Button
+              label="Sell this"
+              variant="outline"
+              icon="tag"
+              onPress={() => {
+                const itemId = entry.item!.id;
+                onClose();
+                router.push({ pathname: '/market/new', params: { itemId } });
+              }}
+            />
+          ) : null}
+
+          {confirming ? (
+            <View style={styles.confirm}>
+              <AppText variant="body">Remove {name} from your binder?</AppText>
+              <View style={styles.confirmButtons}>
+                <Button
+                  label="Remove"
+                  variant="danger"
+                  icon="trash"
+                  loading={busy}
+                  onPress={() => run(() => removeFromCollection(entry.id), onRemoved)}
+                />
+                <Button label="Keep it" variant="outline" disabled={busy} onPress={() => setConfirming(false)} />
+              </View>
+            </View>
+          ) : (
+            <Button label="Remove from binder" variant="danger" icon="trash" disabled={busy} onPress={() => setConfirming(true)} />
+          )}
+        </>
+      ) : null}
+    </Sheet>
   );
 }
 
@@ -176,4 +296,9 @@ const styles = StyleSheet.create({
   rowDivider: { borderTopWidth: 1, borderTopColor: colors.surface3 },
   setRowTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   otherRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
+  pressed: { backgroundColor: colors.surface2 },
+  sheetTop: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  quantityRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  confirm: { gap: 12 },
+  confirmButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
 });
