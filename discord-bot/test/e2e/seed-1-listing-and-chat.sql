@@ -25,6 +25,11 @@ values (current_setting('e2e.convo')::uuid, auth.uid(), 'text', 'Available pa po
 insert into public.messages (id, conversation_id, sender_id, kind, body, offer_amount)
 values ('eeeeeeee-0000-0000-0000-000000000001', current_setting('e2e.convo')::uuid, auth.uid(), 'offer', 'Last na?', 800);
 
+-- The bot compares chat times to the millisecond (JavaScript dates). Without a
+-- pause the seller's answer can land in the same millisecond as the offer, and
+-- the bot then thinks the buyer already saw it and skips the DM.
+do $$ begin perform pg_sleep(0.01); end $$;
+
 select set_config('request.jwt.claim.sub', 'cccccccc-0000-0000-0000-000000000021', false) as _ \gset
 update public.messages set offer_status = 'accepted' where id = 'eeeeeeee-0000-0000-0000-000000000001';
 reset role;
