@@ -3,6 +3,18 @@
 
 type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> };
 
+// When opened from the home screen, iPhones draw the page under the status bar.
+// "viewport-fit=cover" makes the browser report how tall that area is, so the
+// header and pages can keep their buttons below it. Runs as soon as this file
+// loads, before the first screen renders.
+if (typeof document !== 'undefined') {
+  const viewport = document.querySelector('meta[name="viewport"]');
+  const content = viewport?.getAttribute('content') ?? 'width=device-width, initial-scale=1';
+  if (viewport && !content.includes('viewport-fit')) viewport.setAttribute('content', `${content}, viewport-fit=cover`);
+  document.documentElement.style.backgroundColor = '#0E0E10';
+  if (document.body) document.body.style.backgroundColor = '#0E0E10';
+}
+
 let deferred: InstallPrompt | null = null;
 const listeners = new Set<() => void>();
 let started = false;

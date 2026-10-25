@@ -1,11 +1,17 @@
 import { router } from 'expo-router';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AppShell } from '@/components/AppShell';
 import { AppText } from '@/components/AppText';
+import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { Screen, Surface } from '@/components/ui';
+import { useAuth } from '@/lib/auth';
 import { discordInviteUrl } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
+
+const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
 const UPDATED = 'October 24, 2026';
 
@@ -71,13 +77,27 @@ const PRIVACY: { title: string; body: string }[] = [
 ];
 
 export default function RulesScreen() {
+  const { session } = useAuth();
+  const insets = useSafeAreaInsets();
+  // Signed in: the usual header and tabs, so there's always a way out.
+  if (session) {
+    return (
+      <AppShell>
+        <RulesContent />
+      </AppShell>
+    );
+  }
+  return (
+    <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: colors.bg }}>
+      <RulesContent />
+    </View>
+  );
+}
+
+function RulesContent() {
   return (
     <Screen>
-      <Pressable
-        accessibilityRole="link"
-        onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-        style={styles.back}
-      >
+      <Pressable accessibilityRole="link" onPress={goBack} style={styles.back}>
         <Icon name="chevronLeft" size={22} color={colors.text} strokeWidth={2} />
         <AppText variant="bodyStrong">Back</AppText>
       </Pressable>
@@ -115,6 +135,8 @@ export default function RulesScreen() {
           <Icon name="external" size={16} color={colors.accent} />
         </Pressable>
       </Surface>
+
+      <Button label="Back" variant="outline" icon="chevronLeft" onPress={goBack} />
 
       <AppText variant="small" color={colors.textFaint}>
         HunterX TCG is a fan-run community site. It is not affiliated with The Pokémon Company, Bandai, Konami, Riot

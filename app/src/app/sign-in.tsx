@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -18,6 +19,7 @@ const FEATURES = [
 ];
 
 export default function SignInScreen() {
+  const insets = useSafeAreaInsets();
   const { signInWithDiscord } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +37,10 @@ export default function SignInScreen() {
   }
 
   return (
-    <ScrollView style={styles.page} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.page}
+      contentContainerStyle={[styles.content, { paddingTop: 48 + insets.top, paddingBottom: 48 + insets.bottom }]}
+    >
       <View style={styles.column}>
         <Wordmark size={34} />
 
