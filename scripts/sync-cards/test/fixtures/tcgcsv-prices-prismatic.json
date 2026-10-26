@@ -1,0 +1,7 @@
+{"totalItems":5,"success":true,"errors":[],"results":[
+ {"productId":593355,"lowPrice":79.0,"midPrice":92.5,"highPrice":150.0,"marketPrice":89.99,"directLowPrice":null,"subTypeName":"Normal"},
+ {"productId":593354,"lowPrice":40.0,"midPrice":48.0,"highPrice":70.0,"marketPrice":null,"directLowPrice":null,"subTypeName":"Normal"},
+ {"productId":593354,"lowPrice":45.0,"midPrice":49.0,"highPrice":60.0,"marketPrice":47.25,"directLowPrice":null,"subTypeName":"Holofoil"},
+ {"productId":610000,"lowPrice":900.0,"midPrice":1000.0,"highPrice":1400.0,"marketPrice":1050.0,"directLowPrice":null,"subTypeName":"Holofoil"},
+ {"productId":610002,"lowPrice":8.0,"midPrice":9.0,"highPrice":15.0,"marketPrice":0,"directLowPrice":null,"subTypeName":"Normal"}
+]}

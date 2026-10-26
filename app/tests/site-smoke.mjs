@@ -260,6 +260,36 @@ await check('signing out asks first, and Cancel keeps you signed in', async (pag
   expectPath(page, '/sign-in');
 });
 
+await check('sealed search: "151 etb" finds the Elite Trainer Box and shows its peso price', async (page, context) => {
+  await signIn(context);
+  const etbId = 'eeeeeeee-0000-4000-8000-000000000151';
+  const searches = [];
+  await context.route(/\/rest\/v1\/catalog_items/, (route) => {
+    searches.push(decodeURIComponent(route.request().url()));
+    const etb = { id: etbId, game_id: 'pokemon', kind: 'sealed', name: 'Scarlet & Violet 151 Elite Trainer Box', brand: 'Pokémon', line: 'SV: Scarlet & Violet 151', image_url: null, status: 'approved' };
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([etb]) });
+  });
+  await context.route(/\/rest\/v1\/catalog_prices/, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([{
+        catalog_item_id: etbId, local_php: null, local_sales: 0, local_low: null, local_high: null, last_sold_php: null,
+        last_sold_at: null, global_php: 5219, global_source: 'TCGplayer', global_updated_at: new Date().toISOString(), value_php: 5219,
+      }]),
+    }),
+  );
+  await page.goto(`${site}/add?tab=other`);
+  await page.getByText('Sealed product', { exact: true }).click();
+  await page.getByPlaceholder('e.g. Surging Sparks booster box').fill('151 etb');
+  await visible(page, 'Scarlet & Violet 151 Elite Trainer Box');
+  await visible(page, 'Global ≈ ₱5,219');
+  const last = searches.at(-1) ?? '';
+  for (const word of ['151', 'elite', 'trainer', 'box', 'kind=eq.sealed']) {
+    if (!last.includes(word)) throw new Error(`search didn't look for ${word}: ${last}`);
+  }
+});
+
 await browser.close();
 server.close();
 console.log(failures ? `${failures} check(s) failed` : 'All website checks passed');

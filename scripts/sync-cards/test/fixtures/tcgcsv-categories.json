@@ -1,0 +1,7 @@
+{"totalItems":5,"success":true,"errors":[],"results":[
+ {"categoryId":1,"name":"Magic","displayName":"Magic: The Gathering","modifiedOn":"2026-10-20T00:00:00"},
+ {"categoryId":3,"name":"Pokemon","displayName":"Pokémon","modifiedOn":"2026-10-20T00:00:00"},
+ {"categoryId":68,"name":"One Piece Card Game","displayName":"One Piece Card Game","modifiedOn":"2026-10-20T00:00:00"},
+ {"categoryId":85,"name":"Pokemon Japan","displayName":"Pokemon Japan","modifiedOn":"2026-10-20T00:00:00"},
+ {"categoryId":89,"name":"Riftbound: League of Legends Trading Card Game","displayName":"Riftbound","modifiedOn":"2026-10-20T00:00:00"}
+]}

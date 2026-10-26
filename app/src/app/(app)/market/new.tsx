@@ -24,7 +24,7 @@ import {
   uploadListingPhoto,
 } from '@/lib/market';
 import { pickPhotos, type PickedPhoto } from '@/lib/photos';
-import { getCardPrice } from '@/lib/prices';
+import { getCardPrice, getCatalogPrice, getCatalogPrices } from '@/lib/prices';
 import { errorMessage } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import type { CardWithSet, CatalogItem, Condition, Grader, ListingKind, PaymentMethod } from '@/lib/types';
@@ -137,6 +137,8 @@ function SubjectPicker({ onPick }: { onPick: (subject: Subject) => void }) {
     () => (source === 'catalog' ? searchCatalog(catalogKind, debounced) : Promise.resolve([])),
     [source, catalogKind, debounced],
   );
+  const itemIds = (items.data ?? []).map((item) => item.id).join(',');
+  const itemPrices = useQuery(() => getCatalogPrices(itemIds.split(',')), [itemIds]);
 
   return (
     <View style={{ gap: 16 }}>
@@ -216,6 +218,7 @@ function SubjectPicker({ onPick }: { onPick: (subject: Subject) => void }) {
                 <View style={{ flex: 1, gap: 2 }}>
                   <AppText variant="bodyStrong" numberOfLines={1}>{item.name}</AppText>
                   <AppText variant="small" numberOfLines={1}>{[item.brand, item.line].filter(Boolean).join(' · ')}</AppText>
+                  {itemPrices.data?.get(item.id) ? <PriceLine price={itemPrices.data.get(item.id)} /> : null}
                 </View>
                 <AppText variant="smallStrong" color={colors.accent}>Sell this</AppText>
               </Pressable>
@@ -296,6 +299,8 @@ function ListingForm({
   const [error, setError] = useState<string | null>(null);
   const priceCardId = initial ? initial.card_id : subject?.source === 'card' ? subject.card.id : null;
   const priceGuide = useQuery(() => (priceCardId ? getCardPrice(priceCardId) : Promise.resolve(null)), [priceCardId]);
+  const priceItemId = initial ? initial.catalog_item_id : subject?.source === 'catalog' ? subject.item.id : null;
+  const itemPrice = useQuery(() => (priceItemId ? getCatalogPrice(priceItemId) : Promise.resolve(null)), [priceItemId]);
 
   const isCard = initial ? !!initial.card_id : subject?.source === 'card';
   const priceValue = parsePeso(price);
@@ -453,6 +458,7 @@ function ListingForm({
         <View style={{ flex: 1 }}>
           <TextField label="Price (₱)" placeholder="e.g. 1500" value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
           {priceCardId && kind === 'card' ? <PriceLine price={priceGuide.data} /> : null}
+          {priceItemId && itemPrice.data ? <PriceLine price={itemPrice.data} /> : null}
         </View>
         <View style={styles.field}>
           <AppText variant="label" color={colors.textSoft}>Quantity</AppText>

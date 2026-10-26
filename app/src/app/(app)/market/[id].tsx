@@ -29,7 +29,7 @@ import {
   setListingStatus,
   startConversation,
 } from '@/lib/market';
-import { getCardPrice } from '@/lib/prices';
+import { getCardPrice, getCatalogPrice } from '@/lib/prices';
 import { errorMessage } from '@/lib/supabase';
 import { colors, fonts, wideBreakpoint } from '@/lib/theme';
 import type { ListingWithRefs, MemberSummary } from '@/lib/types';
@@ -52,6 +52,8 @@ export default function ListingScreen() {
   const myVouch = useQuery(() => (showVouch ? getMyVouch(id) : Promise.resolve(null)), [showVouch, id]);
   const cardId = listing.data?.card_id ?? null;
   const cardPrice = useQuery(() => (cardId ? getCardPrice(cardId) : Promise.resolve(null)), [cardId]);
+  const catalogItemId = listing.data?.catalog_item_id ?? null;
+  const itemPrice = useQuery(() => (catalogItemId ? getCatalogPrice(catalogItemId) : Promise.resolve(null)), [catalogItemId]);
   // The seller card's sold count and vouches change along with the listing.
   const refresh = () => {
     listing.reload();
@@ -194,6 +196,15 @@ export default function ListingScreen() {
               </View>
               <Icon name="chevronRight" size={16} color={colors.textFaint} strokeWidth={2} />
             </Pressable>
+          ) : null}
+          {item.catalog_item_id && itemPrice.data && (itemPrice.data.local_php !== null || itemPrice.data.global_php !== null) ? (
+            <View style={styles.priceCheck} accessible accessibilityLabel="Price check">
+              <Icon name="chart" size={18} color={colors.accent} />
+              <View style={{ flex: 1 }}>
+                <AppText variant="smallStrong">Price check</AppText>
+                <PriceLine price={itemPrice.data} />
+              </View>
+            </View>
           ) : null}
 
           {isSeller ? (

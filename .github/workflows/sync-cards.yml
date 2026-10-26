@@ -2,6 +2,7 @@ name: Sync card data
 
 # Copies Pokémon, One Piece and Riftbound card data, global card prices and
 # exchange rates into Supabase every night (about 1:47 AM Philippine time).
+# Sealed products and their prices (tcgcsv.com) refresh on Sundays.
 # You can also run it by hand from the
 # Actions tab. Needs these repository secrets:
 #   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and optionally POKEMONTCG_API_KEY.
@@ -12,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       games:
-        description: 'Games to sync (space separated: pokemon one-piece riftbound). Empty = every game shown on the site.'
+        description: 'Games to sync (space separated: pokemon one-piece riftbound). Empty = every game shown on the site. "sealed" = only sealed products and prices.'
         required: false
         default: ''
       full_refresh:

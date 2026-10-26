@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { hasCatalogPrices } from './prices';
 import type {
   CardWithSet,
   CardSet,
@@ -164,16 +165,34 @@ export async function searchCards(gameId: string, term: string): Promise<CardWit
   return (data ?? []) as unknown as CardWithSet[];
 }
 
+// Shorthand collectors type, spelled out the way product names are written.
+const SEALED_SHORTHAND: [RegExp, string][] = [
+  [/\betb\b/gi, 'elite trainer box'],
+  [/\bupc\b/gi, 'ultra premium collection'],
+  [/\bspc\b/gi, 'super premium collection'],
+  [/\bbb\b/gi, 'booster box'],
+];
+
+/** Words to look for in a catalog search, each matched in the name or the set. */
+export function catalogSearchWords(term: string): string[] {
+  let clean = cleanTerm(term);
+  for (const [pattern, words] of SEALED_SHORTHAND) clean = clean.replace(pattern, words);
+  return [...new Set(clean.toLowerCase().split(/\s+/).map((word) => word.replace(/[,()]/g, '')).filter((word) => word.length > 0))].slice(0, 6);
+}
+
 export async function searchCatalog(kind: 'toy' | 'sealed', term: string): Promise<CatalogItem[]> {
-  const clean = cleanTerm(term);
-  if (clean.length < 2) return [];
-  const { data, error } = await supabase
+  if (cleanTerm(term).length < 2) return [];
+  const words = catalogSearchWords(term);
+  let query = supabase
     .from('catalog_items')
     .select('id, game_id, kind, name, brand, line, image_url, status')
     .eq('kind', kind)
-    .ilike('name', `%${clean}%`)
-    .neq('status', 'merged')
-    .limit(30);
+    .neq('status', 'merged');
+  // Every word must appear in the name or the set, in any order: "151 etb".
+  for (const word of words) query = query.or(`name.ilike.%${word}%,line.ilike.%${word}%`);
+  // Newest products first once the sealed prices migration has added release dates.
+  if (await hasCatalogPrices()) query = query.order('released_on', { ascending: false, nullsFirst: false });
+  const { data, error } = await query.order('name').limit(30);
   if (error) throw error;
   return (data ?? []) as CatalogItem[];
 }

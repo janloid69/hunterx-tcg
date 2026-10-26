@@ -8,10 +8,11 @@ import { CardArt } from '@/components/CardArt';
 import { ChipRow } from '@/components/Chip';
 import { Icon } from '@/components/Icon';
 import { Sheet } from '@/components/Sheet';
+import { PriceLine } from '@/components/Prices';
 import { Notice, ProgressBar, Screen, SectionHeader, Stepper, Surface } from '@/components/ui';
 import { getGames, getOtherCollectibles, getSetProgress, removeFromCollection, setQuantity } from '@/lib/data';
 import { peso, percent } from '@/lib/format';
-import { getCollectionValue } from '@/lib/prices';
+import { getCatalogPrices, getCollectionValue, type CatalogPrice } from '@/lib/prices';
 import { errorMessage } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import type { CollectionItemWithRefs } from '@/lib/types';
@@ -24,6 +25,8 @@ export default function BinderScreen() {
   const value = useQuery(getCollectionValue, []);
   const [gameFilter, setGameFilter] = useState('all');
   const [openItemId, setOpenItemId] = useState<string | null>(null);
+  const otherIds = (others.data ?? []).map((entry) => entry.catalog_item_id ?? '').join(',');
+  const otherPrices = useQuery(() => getCatalogPrices(otherIds.split(',')), [otherIds]);
   const openItem = others.data?.find((entry) => entry.id === openItemId) ?? null;
 
   const gameOptions = useMemo(() => {
@@ -44,13 +47,14 @@ export default function BinderScreen() {
         <Button label="Add" icon="plus" onPress={() => router.push('/add')} />
       </View>
 
-      {value.data && value.data.raw_cards > 0 ? (
+      {value.data && value.data.raw_cards + value.data.items > 0 ? (
         <Surface style={{ gap: 4 }}>
           <AppText variant="eyebrow">Worth about</AppText>
           <AppText variant="display">{peso(value.data.value_php)}</AppText>
           <AppText variant="small">
-            {value.data.priced_cards} of {value.data.raw_cards} raw cards priced. Uses the HunterX price, or the global
-            price when a card hasn’t sold here yet. Graded slabs and sealed items aren’t counted yet.
+            {value.data.priced_cards + value.data.priced_items} of {value.data.raw_cards + value.data.items} raw cards,
+            sealed products and toys priced. Uses the HunterX price, or the global price when something hasn’t sold here
+            yet. Graded slabs aren’t counted yet.
           </AppText>
           <Pressable accessibilityRole="link" onPress={() => router.push('/prices')} style={{ alignSelf: 'flex-start', minHeight: 32, justifyContent: 'center' }}>
             <AppText variant="smallStrong" color={colors.accent}>
@@ -152,9 +156,14 @@ export default function BinderScreen() {
                     {itemDetails(entry)}
                   </AppText>
                 </View>
-                <AppText variant="label" color={colors.textMuted}>
-                  ×{entry.quantity}
-                </AppText>
+                <View style={styles.rowRight}>
+                  {otherPrices.data?.get(entry.catalog_item_id ?? '')?.value_php ? (
+                    <AppText variant="smallStrong">{peso(otherPrices.data.get(entry.catalog_item_id ?? '')!.value_php!)}</AppText>
+                  ) : null}
+                  <AppText variant="label" color={colors.textMuted}>
+                    ×{entry.quantity}
+                  </AppText>
+                </View>
                 <Icon name="chevronRight" size={18} color={colors.textFaint} strokeWidth={2} />
               </Pressable>
             ))}
@@ -164,6 +173,7 @@ export default function BinderScreen() {
 
       <ItemSheet
         entry={openItem}
+        price={openItem ? otherPrices.data?.get(openItem.catalog_item_id ?? '') ?? null : null}
         onClose={() => setOpenItemId(null)}
         onChanged={others.reload}
         onRemoved={() => {
@@ -181,11 +191,13 @@ const itemDetails = (entry: CollectionItemWithRefs) =>
 /** A toy or sealed item in the binder: how many, sell it, or remove it. */
 function ItemSheet({
   entry,
+  price,
   onClose,
   onChanged,
   onRemoved,
 }: {
   entry: CollectionItemWithRefs | null;
+  price: CatalogPrice | null;
   onClose: () => void;
   onChanged: () => void;
   onRemoved: () => void;
@@ -220,9 +232,15 @@ function ItemSheet({
         <>
           <View style={styles.sheetTop}>
             <CardArt gameId={entry.item?.game_id} imageUrl={entry.item?.image_url} width={64} height={82} />
-            <AppText variant="small" style={{ flex: 1 }}>
-              {itemDetails(entry)}
-            </AppText>
+            <View style={{ flex: 1, gap: 4 }}>
+              <AppText variant="small">{itemDetails(entry)}</AppText>
+              <PriceLine price={price} />
+              {price?.value_php && entry.quantity > 1 ? (
+                <AppText variant="smallStrong">
+                  {entry.quantity} × {peso(price.value_php)} = {peso(entry.quantity * price.value_php)}
+                </AppText>
+              ) : null}
+            </View>
           </View>
 
           <View style={styles.quantityRow}>
@@ -297,6 +315,7 @@ const styles = StyleSheet.create({
   setRowTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   otherRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
   pressed: { backgroundColor: colors.surface2 },
+  rowRight: { alignItems: 'flex-end', gap: 2 },
   sheetTop: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   quantityRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   confirm: { gap: 12 },

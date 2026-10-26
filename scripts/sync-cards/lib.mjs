@@ -67,6 +67,13 @@ export function createDb({ url, serviceKey }) {
       if (res.status === 400) return false;
       throw new Error(`checking ${table}.${column} failed: ${res.status} ${await res.text()}`);
     },
+    /** Calls a database function, e.g. rpc('sync_catalog_products', { p_rows: [...] }). */
+    async rpc(fn, args) {
+      const res = await fetch(`${base}/rpc/${fn}`, { method: 'POST', headers, body: JSON.stringify(args) });
+      if (!res.ok) throw new Error(`${fn} failed: ${res.status} ${await res.text()}`);
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
+    },
     async upsert(table, rows, { batchSize = 500, onConflict = 'id' } = {}) {
       for (let i = 0; i < rows.length; i += batchSize) {
         const batch = rows.slice(i, i + batchSize);

@@ -6,6 +6,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { CardArt } from '@/components/CardArt';
 import { ChipRow } from '@/components/Chip';
+import { PriceLine } from '@/components/Prices';
 import { Notice, Screen, Stepper, Surface, TextField } from '@/components/ui';
 import {
   addToCollection,
@@ -15,6 +16,7 @@ import {
   searchCatalog,
 } from '@/lib/data';
 import { conditionLabels } from '@/lib/format';
+import { getCatalogPrices } from '@/lib/prices';
 import { errorMessage } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import type { CardWithSet, CatalogItem, Condition, Grader } from '@/lib/types';
@@ -292,6 +294,8 @@ function AddOther() {
   const [term, setTerm] = useState('');
   const debounced = useDebounced(term);
   const results = useQuery(() => searchCatalog(kind, debounced), [kind, debounced]);
+  const resultIds = (results.data ?? []).map((item) => item.id).join(',');
+  const resultPrices = useQuery(() => getCatalogPrices(resultIds.split(',')), [resultIds]);
   const [picked, setPicked] = useState<CatalogItem | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -350,6 +354,7 @@ function AddOther() {
                   .filter(Boolean)
                   .join(' · ')}
               </AppText>
+              {resultPrices.data?.get(item.id) ? <PriceLine price={resultPrices.data.get(item.id)} /> : null}
             </View>
             <AppText variant="smallStrong" color={colors.accent}>
               Select

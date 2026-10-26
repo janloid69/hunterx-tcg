@@ -51,7 +51,23 @@ export type RecentSale = {
   set_name: string | null;
 };
 
-export type CollectionValue = { value_php: number; priced_cards: number; raw_cards: number };
+/** Same prices for a sealed product or toy from the shared catalog. */
+export type CatalogPrice = Omit<CardPrice, 'card_id' | 'global_source'> & {
+  catalog_item_id: string;
+  global_source: 'TCGplayer' | null;
+};
+
+/** Just what a one-line price needs, from a card or a catalog item. */
+export type PriceSummary = Pick<CardPrice, 'local_php' | 'global_php'>;
+
+export type CollectionValue = {
+  value_php: number;
+  priced_cards: number;
+  raw_cards: number;
+  /** Sealed products and toys (after the sealed prices migration). */
+  priced_items: number;
+  items: number;
+};
 
 const num = (value: unknown): number | null => (value === null || value === undefined ? null : Number(value));
 
@@ -69,6 +85,67 @@ function normalize(row: Record<string, unknown>): CardPrice {
     global_updated_at: (row.global_updated_at as string | null) ?? null,
     value_php: num(row.value_php),
   };
+}
+
+function normalizeCatalog(row: Record<string, unknown>): CatalogPrice {
+  const price = normalize({ ...row, card_id: '' });
+  return {
+    catalog_item_id: String(row.catalog_item_id),
+    local_php: price.local_php,
+    local_sales: price.local_sales,
+    local_low: price.local_low,
+    local_high: price.local_high,
+    last_sold_php: price.last_sold_php,
+    last_sold_at: price.last_sold_at,
+    global_php: price.global_php,
+    global_source: price.global_source === 'TCGplayer' ? 'TCGplayer' : null,
+    global_updated_at: price.global_updated_at,
+    value_php: price.value_php,
+  };
+}
+
+// Catalog prices need supabase/migrations/20261028000000_sealed_prices.sql.
+// Until it has run, sealed products and toys simply show no price.
+let catalogPricesReady: Promise<boolean> | null = null;
+export function hasCatalogPrices(): Promise<boolean> {
+  if (!catalogPricesReady) {
+    catalogPricesReady = Promise.resolve(supabase.from('catalog_prices').select('catalog_item_id').limit(1)).then(
+      ({ error }) => !error,
+      () => false,
+    );
+    // Check again later if it wasn't there (it may be added while the site is open).
+    void catalogPricesReady.then((ready) => {
+      if (!ready) catalogPricesReady = null;
+    });
+  }
+  return catalogPricesReady;
+}
+
+export async function getCatalogPrice(catalogItemId: string): Promise<CatalogPrice | null> {
+  if (!(await hasCatalogPrices())) return null;
+  const { data, error } = await supabase
+    .from('catalog_prices')
+    .select('*')
+    .eq('catalog_item_id', catalogItemId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? normalizeCatalog(data as Record<string, unknown>) : null;
+}
+
+/** Prices for many catalog items at once. */
+export async function getCatalogPrices(ids: string[]): Promise<Map<string, CatalogPrice>> {
+  const wanted = [...new Set(ids.filter(Boolean))];
+  const prices = new Map<string, CatalogPrice>();
+  if (wanted.length === 0 || !(await hasCatalogPrices())) return prices;
+  for (let i = 0; i < wanted.length; i += 80) {
+    const { data, error } = await supabase.from('catalog_prices').select('*').in('catalog_item_id', wanted.slice(i, i + 80));
+    if (error) throw error;
+    for (const row of (data ?? []) as Record<string, unknown>[]) {
+      const price = normalizeCatalog(row);
+      prices.set(price.catalog_item_id, price);
+    }
+  }
+  return prices;
 }
 
 export async function getCardPrice(cardId: string): Promise<CardPrice | null> {
@@ -134,6 +211,8 @@ export async function getCollectionValue(): Promise<CollectionValue> {
     value_php: Number(row.value_php ?? 0),
     priced_cards: Number(row.priced_cards ?? 0),
     raw_cards: Number(row.raw_cards ?? 0),
+    priced_items: Number(row.priced_items ?? 0),
+    items: Number(row.items ?? 0),
   };
 }
 

@@ -115,12 +115,12 @@ export default function HomeScreen() {
           <Stat value={summary.data?.sealed} label="Sealed" />
           <Stat value={summary.data?.items} label="Toys" />
         </View>
-        {value.data && value.data.priced_cards > 0 ? (
+        {value.data && value.data.priced_cards + value.data.priced_items > 0 ? (
           <Pressable accessibilityRole="link" onPress={() => router.push('/binder')}>
             <AppText variant="bodyStrong">
               Worth about {peso(value.data.value_php)}{' '}
               <AppText variant="small">
-                ({value.data.priced_cards} of {value.data.raw_cards} raw cards priced)
+                ({value.data.priced_cards + value.data.priced_items} of {value.data.raw_cards + value.data.items} priced)
               </AppText>
             </AppText>
           </Pressable>

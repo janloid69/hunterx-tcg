@@ -49,6 +49,10 @@ account deletion, and the Discord bot).
   **global price** (TCGplayer or Cardmarket, converted to pesos at the day's rate). Card pages show both, recent
   sales and graded prices; the Price guide page searches cards and lists the latest sales. Listings and the sell
   form show a price check, and the binder shows its estimated value.
+- **Sealed prices:** booster boxes, Elite Trainer Boxes, packs, tins and collections for Pokémon, One Piece and
+  Riftbound come from TCGCSV (a free daily copy of TCGplayer's catalog and market prices), refreshed weekly by the
+  card sync. They show a global price in pesos, and a HunterX price once they sell here (toys too). Search
+  understands shorthand like "151 etb".
 - **Scanner:** on the Scan page, point the phone camera at the number in the card's bottom corner (`OP01-120`,
   `238/191`, `SSP EN 238/191`). The website reads it on the phone (Tesseract.js, nothing uploaded), finds the
   card, shows its price and adds it to the binder. Bulk mode goes straight back to scanning for a stack of
@@ -76,7 +80,8 @@ the code. They go only where these steps say.
 1. Create a project at <https://supabase.com> (the free plan is enough). Pick the Singapore region for the Philippines.
 2. **Create the database:** open **SQL Editor**, and run each file in `supabase/migrations/` in order, in a new
    query each time: `20261023000000_init.sql`, then `20261024000000_marketplace.sql`, then
-   `20261025000000_discord_bot.sql`, then `20261026000000_price_guide.sql`, then `20261027000000_launch.sql`.
+   `20261025000000_discord_bot.sql`, then `20261026000000_price_guide.sql`, then `20261027000000_launch.sql`, then
+   `20261028000000_sealed_prices.sql`.
    Each should say "Success. No rows returned". The marketplace file also creates the `listing-photos` storage bucket and turns on live chat
    updates.
 3. **Turn on Discord sign-in:** Authentication → Providers (Sign In / Providers) → **Discord**. Turn it on and paste the

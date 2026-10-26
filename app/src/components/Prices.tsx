@@ -1,13 +1,13 @@
 import { StyleSheet, View } from 'react-native';
 
 import { peso, timeAgo } from '@/lib/format';
-import type { CardPrice } from '@/lib/prices';
+import type { CardPrice, PriceSummary } from '@/lib/prices';
 import { colors } from '@/lib/theme';
 
 import { AppText } from './AppText';
 
 /** One line: "HunterX ₱1,250 · Global ≈ ₱1,480", for tiles, sheets and listings. */
-export function PriceLine({ price, align = 'left' }: { price: CardPrice | null | undefined; align?: 'left' | 'right' }) {
+export function PriceLine({ price, align = 'left' }: { price: PriceSummary | null | undefined; align?: 'left' | 'right' }) {
   const parts: string[] = [];
   if (price?.local_php !== null && price?.local_php !== undefined) parts.push(`HunterX ${peso(price.local_php)}`);
   if (price?.global_php !== null && price?.global_php !== undefined) parts.push(`Global ≈ ${peso(price.global_php)}`);
