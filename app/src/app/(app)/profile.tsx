@@ -19,6 +19,7 @@ export default function ProfileScreen() {
   const { profile, session, roleSyncError, signOut } = useAuth();
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [typed, setTyped] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -151,15 +152,24 @@ export default function ProfileScreen() {
 
       {session?.user.email ? <AppText variant="small">Signed in as {session.user.email}</AppText> : null}
 
-      <Button
-        label="Sign out"
-        variant="outline"
-        icon="logout"
-        loading={busy}
-        onPress={async () => {
+      <Button label="Sign out" variant="outline" icon="logout" onPress={() => setConfirmSignOut(true)} />
+
+      <ConfirmSheet
+        visible={confirmSignOut}
+        title="Sign out of HunterX?"
+        message="You’ll need to sign in with Discord again to use HunterX on this device."
+        confirmLabel="Sign out"
+        busy={busy}
+        onConfirm={async () => {
           setBusy(true);
-          await signOut();
+          try {
+            await signOut();
+          } finally {
+            setBusy(false);
+            setConfirmSignOut(false);
+          }
         }}
+        onClose={() => setConfirmSignOut(false)}
       />
 
       <Surface style={{ gap: 10 }}>

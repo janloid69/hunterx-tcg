@@ -245,6 +245,21 @@ await check('binder: tap a toy, then remove it', async (page, context) => {
   if (!removed) throw new Error('no delete request was sent');
 });
 
+await check('signing out asks first, and Cancel keeps you signed in', async (page, context) => {
+  await signIn(context);
+  await page.goto(`${site}/profile`);
+  await page.getByText('Sign out', { exact: true }).first().click();
+  await visible(page, 'Sign out of HunterX?');
+  await page.getByText('Cancel', { exact: true }).click();
+  await page.getByText('Sign out of HunterX?', { exact: true }).waitFor({ state: 'hidden', timeout: WAIT });
+  expectPath(page, '/profile');
+  await page.getByText('Sign out', { exact: true }).first().click();
+  await visible(page, 'Sign out of HunterX?');
+  await page.getByText('Sign out', { exact: true }).last().click();
+  await visible(page, SIGN_IN);
+  expectPath(page, '/sign-in');
+});
+
 await browser.close();
 server.close();
 console.log(failures ? `${failures} check(s) failed` : 'All website checks passed');

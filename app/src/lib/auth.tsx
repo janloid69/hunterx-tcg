@@ -131,7 +131,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    // If Supabase can't be reached, still sign out on this device.
+    const { error } = await supabase.auth.signOut();
+    if (error) await supabase.auth.signOut({ scope: 'local' });
     setProfile(null);
     setRoleSyncError(null);
   }, []);
