@@ -290,6 +290,35 @@ await check('sealed search: "151 etb" finds the Elite Trainer Box and shows its 
   }
 });
 
+await check('Community shows the latest #upcoming-drops posts with links, replies and pictures', async (page, context) => {
+  await signIn(context);
+  const now = Date.now();
+  const drops = [
+    {
+      id: '1600000000000000003', author_name: 'benzonnn', author_avatar: null, posted_at: new Date(now - 60_000).toISOString(), edited_at: null,
+      content: '@Pokemon\n\nUpcoming Walmart (US) drops:\n\nUPC: https://www.walmart.com/ip/POKEMON-30TH-ANNIVERSARY-DAY-NIGHT-ULTRA-PREMIUM-COLLECTION/20887353294',
+      attachments: [], reply: null, url: 'https://discord.com/channels/1539545293408837697/1600000000000000999/1600000000000000003',
+    },
+    {
+      id: '1600000000000000002', author_name: 'benzonnn', author_avatar: null, posted_at: new Date(now - 86_400_000).toISOString(), edited_at: new Date(now - 86_000_000).toISOString(),
+      content: '30th Poster Collection^', reply: { author: 'benzonnn', content: 'https://www.pokemoncenter.com/ queue up @Pokemon' },
+      attachments: [{ url: `${site}/og-image.png`, kind: 'image', name: 'restock.png', width: 1200, height: 630 }],
+      url: 'https://discord.com/channels/1539545293408837697/1600000000000000999/1600000000000000002',
+    },
+  ];
+  await context.route(/\/rest\/v1\/community_drops/, (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(drops) }),
+  );
+  await page.goto(`${site}/community`);
+  await visible(page, 'Upcoming drops');
+  await visible(page, 'Open #upcoming-drops');
+  await visible(page, 'walmart.com/ip/POKEMON-30TH-ANNIVERSA…');
+  await visible(page, '30th Poster Collection^');
+  await visible(page, 'Replying to benzonnn:');
+  if ((await page.getByText('Open in Discord', { exact: true }).count()) !== 2) throw new Error('each post should link to Discord');
+  if ((await page.getByText('Upcoming events', { exact: true }).count()) !== 0) throw new Error('events should be replaced by drops');
+});
+
 await browser.close();
 server.close();
 console.log(failures ? `${failures} check(s) failed` : 'All website checks passed');

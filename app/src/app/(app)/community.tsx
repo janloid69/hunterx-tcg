@@ -1,13 +1,14 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
+import { DropCard } from '@/components/DropCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { Badge, Screen, SectionHeader, Surface } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { eventTime, getLatestVouches, getTopTraders, getUpcomingEvents, type CommunityEvent } from '@/lib/community';
+import { dropChannelUrl, getLatestDrops, getLatestVouches, getTopTraders } from '@/lib/community';
 import { timeAgo } from '@/lib/format';
 import { discordInviteUrl } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
@@ -18,7 +19,7 @@ const memberName = (person: { display_name: string | null; username: string | nu
 
 export default function CommunityScreen() {
   const { profile } = useAuth();
-  const events = useQuery(getUpcomingEvents, []);
+  const drops = useQuery(() => getLatestDrops(10), []);
   const vouches = useQuery(() => getLatestVouches(8), []);
   const traders = useQuery(() => getTopTraders(10), []);
 
@@ -54,15 +55,24 @@ export default function CommunityScreen() {
       </View>
 
       <View style={styles.section}>
-        <SectionHeader title="Upcoming events" />
-        {events.loading && !events.data ? <ActivityIndicator color={colors.accent} /> : null}
-        {events.data && events.data.length === 0 ? (
+        <SectionHeader
+          title="Upcoming drops"
+          action={
+            drops.data && drops.data.length > 0
+              ? { label: 'Open #upcoming-drops', onPress: () => Linking.openURL(dropChannelUrl(drops.data![0])) }
+              : undefined
+          }
+        />
+        {drops.loading && !drops.data ? <ActivityIndicator color={colors.accent} /> : null}
+        {drops.error ? <AppText variant="small">{drops.error}</AppText> : null}
+        {drops.data && drops.data.length === 0 ? (
           <AppText variant="small">
-            No events planned right now. When mods schedule a pull night or meetup in the Discord, it shows up here.
+            No drops posted yet. When the community shares an upcoming release or restock in #upcoming-drops on
+            Discord, it shows up here.
           </AppText>
         ) : null}
-        {(events.data ?? []).map((event) => (
-          <EventCard key={event.id} event={event} />
+        {(drops.data ?? []).map((drop) => (
+          <DropCard key={drop.id} drop={drop} />
         ))}
       </View>
 
@@ -151,35 +161,6 @@ export default function CommunityScreen() {
   );
 }
 
-function EventCard({ event }: { event: CommunityEvent }) {
-  return (
-    <Surface style={{ padding: 0, overflow: 'hidden' }}>
-      {event.image_url ? (
-        <Image source={{ uri: event.image_url }} style={styles.eventImage} resizeMode="cover" accessibilityIgnoresInvertColors />
-      ) : null}
-      <View style={{ padding: 16, gap: 6 }}>
-        <View style={styles.badges}>
-          {event.status === 'active' ? <Badge label="Live now" /> : null}
-          <AppText variant="smallStrong" color={colors.accent}>
-            {eventTime(event.starts_at)}
-          </AppText>
-        </View>
-        <AppText variant="heading">{event.name}</AppText>
-        {event.location ? <AppText variant="small">{event.location}</AppText> : null}
-        {event.description ? (
-          <AppText variant="body" color={colors.textSoft} numberOfLines={4}>
-            {event.description}
-          </AppText>
-        ) : null}
-        <View style={[styles.badges, { marginTop: 4 }]}>
-          <Button label="Open in Discord" variant="discord" icon="external" onPress={() => Linking.openURL(event.url)} />
-          {event.interested ? <AppText variant="small">{event.interested} interested</AppText> : null}
-        </View>
-      </View>
-    </Surface>
-  );
-}
-
 function LinkRow({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="link" onPress={onPress} style={({ pressed }) => [styles.linkRow, pressed ? { opacity: 0.8 } : null]}>
@@ -209,6 +190,5 @@ const styles = StyleSheet.create({
   pressed: { backgroundColor: colors.surface2 },
   stars: { flexDirection: 'row', alignItems: 'center', gap: 1 },
   rank: { width: 22, textAlign: 'center' },
-  eventImage: { width: '100%', aspectRatio: 2.5, backgroundColor: colors.surface3 },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 },
 });

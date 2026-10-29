@@ -170,6 +170,12 @@ export function createDiscordRest({ token, fetchImpl = fetch, sleep = sleepFor, 
     /** The server's Discord events (scheduled, live, finished and cancelled). */
     listScheduledEvents: (guildId) => request('GET', `/guilds/${guildId}/scheduled-events?with_user_count=true`),
 
+    /** The latest messages in a channel, newest first (up to 100). */
+    listMessages: (channelId, limit = 50) =>
+      request('GET', `/channels/${channelId}/messages?limit=${Math.min(100, Math.max(1, limit))}`),
+    listRoles: (guildId) => request('GET', `/guilds/${guildId}/roles`),
+    listGuildChannels: (guildId) => request('GET', `/guilds/${guildId}/channels`),
+
     /** Everyone in the server (people, not bots), 1000 at a time. */
     async listMembers(guildId) {
       const members = [];

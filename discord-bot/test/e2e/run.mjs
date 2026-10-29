@@ -11,6 +11,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
 import { createDb } from '../../src/db.mjs';
+import { createDropSync } from '../../src/drops.mjs';
 import { createEventSync } from '../../src/events.mjs';
 import { createHandlers } from '../../src/handlers.mjs';
 import { createStore } from '../../src/store.mjs';
@@ -162,5 +163,41 @@ assert.deepEqual(stored.map((row) => row.id), ['1700000000000000001'], 'finished
 discordEvents = [];
 await eventSync.sync();
 assert.deepEqual(await db.select('community_events', 'select=id'), []);
+
+// Step 6: #upcoming-drops posts copied to the Community page -------------------
+const DROPS = '1800000000000000009';
+const poster = { id: '1800000000000000050', username: 'benzonnn', global_name: 'benzonnn', avatar: null };
+let channelPosts = [
+  {
+    id: '1800000000000000002', type: 19, channel_id: DROPS, author: poster, content: '30th Poster Collection^',
+    timestamp: new Date().toISOString(), edited_timestamp: null, attachments: [], mentions: [],
+    referenced_message: { id: '1800000000000000001', author: poster, content: 'queue up <@&1800000000000000070>', mentions: [] },
+  },
+  {
+    id: '1800000000000000001', type: 0, channel_id: DROPS, author: poster, content: 'https://www.pokemoncenter.com/ queue up <@&1800000000000000070>',
+    timestamp: new Date(Date.now() - 3_600_000).toISOString(), edited_timestamp: null, mentions: [],
+    attachments: [{ id: '1', filename: 'restock.png', url: 'https://cdn.discordapp.com/attachments/1/2/restock.png', content_type: 'image/png', width: 1080, height: 1920 }],
+  },
+];
+const dropSync = createDropSync({
+  store,
+  discord: {
+    listMessages: async () => channelPosts,
+    listRoles: async () => [{ id: '1800000000000000070', name: 'Pokemon' }],
+    listGuildChannels: async () => [],
+  },
+  config: { ...config, dropsChannelId: DROPS },
+  log,
+});
+assert.equal(await dropSync.sync(), 2);
+let drops = await db.select('community_drops', 'select=id,content,reply,attachments&order=posted_at.desc');
+assert.deepEqual(drops.map((row) => row.id), ['1800000000000000002', '1800000000000000001']);
+assert.deepEqual(drops[0].reply, { author: 'benzonnn', content: 'queue up @Pokemon' });
+assert.equal(drops[1].content, 'https://www.pokemoncenter.com/ queue up @Pokemon');
+assert.equal(drops[1].attachments[0].kind, 'image');
+channelPosts = channelPosts.slice(1);
+await dropSync.sync();
+drops = await db.select('community_drops', 'select=id');
+assert.deepEqual(drops.map((row) => row.id), ['1800000000000000001'], 'posts deleted in Discord leave the website');
 
 console.log('End-to-end bot check passed');

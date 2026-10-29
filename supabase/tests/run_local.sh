@@ -41,6 +41,7 @@ for mode in strict exposed; do
   run "hx_$mode" -f "$here/40_price_guide_test.sql"
   run "hx_$mode" -f "$here/50_launch_test.sql"
   run "hx_$mode" -f "$here/60_sealed_test.sql"
+  run "hx_$mode" -f "$here/70_drops_test.sql"
 
   # The bot against the same database through PostgREST, if it's installed.
   if [ -n "${POSTGREST_BIN:-}" ]; then

@@ -30,6 +30,9 @@ export function fakeStore(data = {}) {
     saveEvents: async (rows) => {
       calls.push(['saveEvents', rows]);
     },
+    saveDrops: async (rows) => {
+      calls.push(['saveDrops', rows]);
+    },
     syncRoles: async (args) => {
       calls.push(['syncRoles', args]);
       return data.syncChanged ?? 1;
@@ -80,6 +83,9 @@ export function fakeDiscord({ failEdits = null, closedDms = [] } = {}) {
     },
     listMembers: async () => [],
     listScheduledEvents: async () => [],
+    listMessages: async () => [],
+    listRoles: async () => [],
+    listGuildChannels: async () => [],
     getChannel: async (channelId) => ({ id: channelId, name: 'pull-night-vc' }),
     interactionCallback: async (...args) => record('interactionCallback', ...args),
     editOriginal: async (...args) => record('editOriginal', ...args),

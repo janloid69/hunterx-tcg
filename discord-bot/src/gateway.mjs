@@ -6,6 +6,7 @@
 export const Intents = {
   GUILDS: 1 << 0,
   GUILD_MEMBERS: 1 << 1, // privileged: "Server Members Intent" in the Developer Portal
+  GUILD_MESSAGES: 1 << 9, // not privileged: says when messages change (the text needs Message Content Intent)
 };
 
 const Op = {

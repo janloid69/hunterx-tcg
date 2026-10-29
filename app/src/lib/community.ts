@@ -1,4 +1,5 @@
-// Community page data: Discord server events, latest vouches, top traders.
+// Community page data: #upcoming-drops posts and server events from Discord,
+// latest vouches, top traders.
 
 import { supabase } from './supabase';
 import type { MemberSummary } from './types';
@@ -13,6 +14,27 @@ export type CommunityEvent = {
   image_url: string | null;
   interested: number | null;
   status: 'scheduled' | 'active';
+  url: string;
+};
+
+export type DropAttachment = {
+  url: string;
+  kind: 'image' | 'video' | 'file';
+  name: string | null;
+  width: number | null;
+  height: number | null;
+};
+
+/** A post from the server's #upcoming-drops channel, copied in by the HunterX bot. */
+export type CommunityDrop = {
+  id: string;
+  author_name: string;
+  author_avatar: string | null;
+  content: string;
+  attachments: DropAttachment[];
+  reply: { author: string; content: string } | null;
+  posted_at: string;
+  edited_at: string | null;
   url: string;
 };
 
@@ -40,6 +62,26 @@ export async function getUpcomingEvents(): Promise<CommunityEvent[]> {
   const { data, error } = await supabase.from('community_events').select('*').order('starts_at').limit(10);
   if (error) throw error;
   return (data ?? []) as CommunityEvent[];
+}
+
+/** Newest #upcoming-drops posts. Empty until the drops migration has run. */
+export async function getLatestDrops(limit = 10): Promise<CommunityDrop[]> {
+  const { data, error } = await supabase
+    .from('community_drops')
+    .select('id, author_name, author_avatar, content, attachments, reply, posted_at, edited_at, url')
+    .order('posted_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    // The table arrives with supabase/migrations/20261029000000_drops.sql.
+    if (error.code === 'PGRST205' || error.code === '42P01') return [];
+    throw error;
+  }
+  return ((data ?? []) as CommunityDrop[]).map((drop) => ({ ...drop, attachments: Array.isArray(drop.attachments) ? drop.attachments : [] }));
+}
+
+/** The Discord channel a post is in: https://discord.com/channels/<server>/<channel> */
+export function dropChannelUrl(drop: Pick<CommunityDrop, 'url'>): string {
+  return drop.url.replace(/\/\d+$/, '');
 }
 
 export async function getLatestVouches(limit = 8): Promise<VouchFeedItem[]> {

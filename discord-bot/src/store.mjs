@@ -63,6 +63,13 @@ export function createStore(db) {
       await db.remove('community_events', keep.length ? `id=not.in.(${keep.join(',')})` : 'id=not.is.null');
     },
 
+    /** Replaces the stored #upcoming-drops posts with this list. */
+    async saveDrops(rows) {
+      if (rows.length) await db.upsert('community_drops', rows, 'id');
+      const keep = rows.map((row) => row.id).filter((id) => /^\d+$/.test(id));
+      await db.remove('community_drops', keep.length ? `id=not.in.(${keep.join(',')})` : 'id=not.is.null');
+    },
+
     nextEvents: (limit) => db.rpc('bot_next_events', { p_limit: limit }),
     finishEvent: (id, error = null) => db.rpc('bot_finish_event', { p_id: id, p_error: error }),
     cleanup: () => db.rpc('bot_cleanup'),

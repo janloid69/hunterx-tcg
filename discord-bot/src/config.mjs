@@ -43,6 +43,12 @@ export function loadConfig(env = process.env) {
     if (!SNOWFLAKE.test(ids[name])) problems.push(`${name} should be ${what} (a long number from Discord's Copy ID).`);
   }
 
+  // Optional: the channel whose posts appear as "Upcoming drops" on the website.
+  const dropsChannelId = value('DROPS_CHANNEL_ID');
+  if (dropsChannelId && !SNOWFLAKE.test(dropsChannelId)) {
+    problems.push("DROPS_CHANNEL_ID should be the #upcoming-drops channel ID (a long number from Discord's Copy ID), or empty.");
+  }
+
   if (problems.length) {
     throw new ConfigError(`The bot's settings in .env need fixing:\n  - ${problems.join('\n  - ')}`);
   }
@@ -57,6 +63,7 @@ export function loadConfig(env = process.env) {
     marketChannelId: ids.MARKET_CHANNEL_ID,
     vouchChannelId: ids.VOUCH_CHANNEL_ID,
     reportsChannelId: ids.REPORTS_CHANNEL_ID,
+    dropsChannelId: dropsChannelId || null,
     siteUrl: (value('SITE_URL') || 'https://hunterx-tcg.netlify.app').replace(/\/$/, ''),
     pollMs: number(env.POLL_SECONDS, 5, { min: 2, max: 300 }) * 1000,
     dmCooldownMs: number(env.DM_COOLDOWN_MINUTES, 10, { min: 0, max: 1440 }) * 60_000,

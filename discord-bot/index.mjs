@@ -10,6 +10,7 @@ import path from 'node:path';
 import { ConfigError, loadConfig } from './src/config.mjs';
 import { createDb } from './src/db.mjs';
 import { createDiscordRest, DiscordError } from './src/discord-rest.mjs';
+import { createDropSync } from './src/drops.mjs';
 import { createEventSync } from './src/events.mjs';
 import { createGateway, Intents } from './src/gateway.mjs';
 import { createHandlers } from './src/handlers.mjs';
@@ -98,6 +99,11 @@ async function main() {
   const textTypes = [ChannelType.TEXT, ChannelType.ANNOUNCEMENT];
   await checkChannel(discord, config, config.marketChannelId, 'market', textTypes);
   await checkChannel(discord, config, config.vouchChannelId, 'vouch', textTypes);
+  if (config.dropsChannelId) {
+    await checkChannel(discord, config, config.dropsChannelId, 'drops', textTypes);
+  } else {
+    log('Drops: no DROPS_CHANNEL_ID in .env, so the website shows no drops.');
+  }
   const reportsChannel = await checkChannel(discord, config, config.reportsChannelId, 'reports', [
     ...textTypes,
     ChannelType.FORUM,
@@ -115,6 +121,7 @@ async function main() {
   const handlers = createHandlers({ store, discord, config, log, reportsMode });
   const roles = createRoleSync({ store, discord, config, log });
   const events = createEventSync({ store, discord, config, log });
+  const drops = createDropSync({ store, discord, config, log });
   const onInteraction = createInteractions({ store, discord, config, log });
   const worker = createWorker({ store, handlers, log, pollMs: config.pollMs });
 
@@ -123,7 +130,7 @@ async function main() {
 
   const gateway = createGateway({
     token: config.token,
-    intents: Intents.GUILDS | Intents.GUILD_MEMBERS,
+    intents: Intents.GUILDS | Intents.GUILD_MEMBERS | (config.dropsChannelId ? Intents.GUILD_MESSAGES : 0),
     getGatewayUrl: discord.gatewayUrl,
     presence: {
       activities: [{ name: 'the HunterX market', type: 3 }],
@@ -139,6 +146,7 @@ async function main() {
           log('Connected to the Discord gateway');
           safely('Role check', roles.fullSync());
           safely('Copying server events', events.sync());
+          safely('Copying drops', drops.sync());
           break;
         case 'RESUMED':
           log('Reconnected to the Discord gateway');
@@ -147,6 +155,11 @@ async function main() {
         case 'GUILD_MEMBER_UPDATE':
         case 'GUILD_MEMBER_REMOVE':
           safely('Updating member badges', roles.onMemberEvent(type, data));
+          break;
+        case 'MESSAGE_CREATE':
+        case 'MESSAGE_UPDATE':
+        case 'MESSAGE_DELETE':
+          drops.onMessageEvent(data);
           break;
         case 'INTERACTION_CREATE':
           safely('Handling a button', onInteraction(data));
@@ -169,6 +182,7 @@ async function main() {
   const timers = [
     setInterval(() => safely('Role check', roles.fullSync()), config.roleSyncMs),
     setInterval(() => safely('Copying server events', events.sync()), 15 * 60_000),
+    setInterval(() => safely('Copying drops', drops.sync()), 2 * 60_000),
     setInterval(() => {
       safely('Cleanup', store.cleanup());
       log.prune();

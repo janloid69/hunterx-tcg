@@ -14,8 +14,10 @@ Runs on the HunterX 24/7 server and connects the website to the Discord:
   a mod has reviewed it. The website's Reports page and the Discord buttons stay in sync.
 - **Roles:** Verified Seller (hunterxcircle) and Mod badges on the website update the moment roles change in
   Discord, including when a Circle subscription ends or someone leaves. Everyone is re-checked every 6 hours.
-- **Server events:** upcoming Discord events (pull nights, meetups) are copied to the website's Community page
-  every 15 minutes. Create them in Discord as usual (server name → Create Event).
+- **Upcoming drops:** the latest posts in #upcoming-drops (text, links, pictures, replies) show on the website's
+  Community page, within seconds of being posted, edited or deleted. Set `DROPS_CHANNEL_ID` (see below).
+- **Server events:** upcoming Discord events (pull nights, meetups) are also copied to the database every 15
+  minutes, ready to show on the site again later.
 
 It needs only Node.js 22. No `npm install`, no other packages.
 
@@ -43,6 +45,11 @@ Open <https://discord.com/developers/applications> and pick the HunterX app (the
    reports; the bot never pings @everyone or @here).
 
 ### 3. Channel permissions in Discord
+
+- **#upcoming-drops** (for the website's Upcoming drops): the bot needs View Channel and Read Message History
+  there. In the Developer Portal, also turn on **Bot → Privileged Gateway Intents → Message Content Intent**
+  (Discord only shares message text with bots that have it), then put the channel's ID in `.env` as
+  `DROPS_CHANNEL_ID` and restart the bot.
 
 - **Reports channel** (mod-only): open the channel's settings → Permissions → add the bot. Allow View Channel,
   Send Messages, Embed Links, Create Public Threads, Send Messages in Threads, Manage Threads.

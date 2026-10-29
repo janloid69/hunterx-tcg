@@ -37,8 +37,8 @@ account deletion, and the Discord bot).
 - **Delete account** from Profile (removes photos, then everything tied to the account).
 - **Discord bot:** posts listings and vouches in their channels, DMs members about messages and deals (they can
   turn this off on Profile), opens report tickets with mod buttons, keeps badges in sync with Discord roles, and
-  copies upcoming server events to the Community page.
-- **Community:** upcoming Discord events, latest vouches and top traders.
+  copies #upcoming-drops posts to the Community page.
+- **Community:** the latest #upcoming-drops posts from Discord, latest vouches and top traders.
 - **Mod tools:** reports, plus a review queue for toys and sealed products members add (approve, fix the name,
   merge duplicates, remove junk).
 - **House rules and privacy** page, reachable before signing in.
@@ -81,7 +81,7 @@ the code. They go only where these steps say.
 2. **Create the database:** open **SQL Editor**, and run each file in `supabase/migrations/` in order, in a new
    query each time: `20261023000000_init.sql`, then `20261024000000_marketplace.sql`, then
    `20261025000000_discord_bot.sql`, then `20261026000000_price_guide.sql`, then `20261027000000_launch.sql`, then
-   `20261028000000_sealed_prices.sql`.
+   `20261028000000_sealed_prices.sql`, then `20261029000000_drops.sql`.
    Each should say "Success. No rows returned". The marketplace file also creates the `listing-photos` storage bucket and turns on live chat
    updates.
 3. **Turn on Discord sign-in:** Authentication → Providers (Sign In / Providers) → **Discord**. Turn it on and paste the
