@@ -89,9 +89,9 @@ the code. They go only where these steps say.
    Client ID and Client Secret from step 1. Copy the **Callback URL** shown there
    (it looks like `https://<project-ref>.supabase.co/auth/v1/callback`).
 4. Back in the Discord Developer Portal → **OAuth2** → **Redirects**, add that Callback URL and save.
-5. Authentication → **URL Configuration**: set **Site URL** to your website address
-   (`https://hunterx-tcg.pages.dev`, from step 4). Under **Redirect URLs**, add `https://hunterx-tcg.pages.dev/**`
-   and `http://localhost:8081`.
+5. Authentication → **URL Configuration**: set **Site URL** to your website address (`https://hunterxtcg.com`).
+   Under **Redirect URLs**, add `https://hunterxtcg.com/**`, `https://www.hunterxtcg.com/**`,
+   `https://hunterx-tcg.pages.dev/**` and `http://localhost:8081`.
 6. **Deploy the role-sync function** (no software needed):
    1. Edge Functions → **Deploy a new function** → **Via Editor**. Name it exactly `discord-sync`.
    2. Replace the sample code with the whole of `supabase/functions/discord-sync/index.ts` and click **Deploy**.
@@ -128,9 +128,12 @@ pass on `main` (unlimited visitors and bandwidth on the free plan).
 3. In this repo on GitHub: Settings → Secrets and variables → Actions → add `CLOUDFLARE_API_TOKEN` (the token)
    and `CLOUDFLARE_ACCOUNT_ID`.
 4. Actions → **Publish website** → Run workflow. The first run creates the project; the run's summary shows
-   the address (`https://hunterx-tcg.pages.dev`). Add it to Supabase's Site URL and Redirect URLs (step 2.5).
-5. No other settings: the website's public Supabase address and key are in `app/.env.production`.
-   (If you ever move to a new Supabase project, update that file.) A custom domain can come later.
+   its Cloudflare address (`https://hunterx-tcg.pages.dev`).
+5. **Domain:** `hunterxtcg.com` is registered with Cloudflare and connected under Workers & Pages → hunterx-tcg →
+   Custom domains (both `hunterxtcg.com` and `www.hunterxtcg.com`). Add it to Supabase's Site URL and Redirect
+   URLs (step 2.5).
+6. No other settings: the website's public Supabase address and key are in `app/.env.production`.
+   (If you ever move to a new Supabase project, update that file.)
 
 The site used to be on Netlify (`hunterx-tcg.netlify.app`). Netlify's free plan now runs on monthly credits, so
 it only forwards the old address: `netlify.toml` and `netlify-forward/` send every old link to the same page on

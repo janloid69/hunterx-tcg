@@ -102,7 +102,7 @@ const goodEnv = {
 test('settings: good values and defaults', () => {
   const config = loadConfig(goodEnv);
   assert.equal(config.supabaseUrl, 'https://czqillqyyqhdgjqozwqm.supabase.co');
-  assert.equal(config.siteUrl, 'https://hunterx-tcg.pages.dev');
+  assert.equal(config.siteUrl, 'https://hunterxtcg.com');
   assert.equal(config.pollMs, 5000);
   assert.equal(config.dmCooldownMs, 600_000);
   assert.equal(loadConfig({ ...goodEnv, SUPABASE_SECRET_KEY: '', SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_old' }).secretKey, 'sb_secret_old');

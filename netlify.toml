@@ -1,15 +1,15 @@
-# HunterX moved to Cloudflare Pages: https://hunterx-tcg.pages.dev (published by
+# HunterX moved to Cloudflare Pages: https://hunterxtcg.com (published by
 # .github/workflows/deploy-site.yml). Netlify now only forwards the old
 # hunterx-tcg.netlify.app links there, to the same page.
 [build]
   base = "netlify-forward"
   publish = "."
-  command = "echo Forwarding to hunterx-tcg.pages.dev"
+  command = "echo Forwarding to hunterxtcg.com"
   # Each Netlify deploy costs credits, so only rebuild when the forwarding changes.
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../netlify.toml"
 
 [[redirects]]
   from = "/*"
-  to = "https://hunterx-tcg.pages.dev/:splat"
+  to = "https://hunterxtcg.com/:splat"
   status = 301
   force = true

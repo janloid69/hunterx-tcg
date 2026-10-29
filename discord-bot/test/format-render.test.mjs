@@ -43,7 +43,7 @@ test('active listing post', () => {
   const payload = listingPost(listing(), { ...site, stats: { vouch_count: 3, rating_avg: 4.67 } });
   const [embed] = payload.embeds;
   assert.equal(embed.title, "Shiki (048) · The World's Strongest Warriors OP17-048");
-  assert.equal(embed.url, 'https://hunterx-tcg.pages.dev/market/listing-uuid');
+  assert.equal(embed.url, 'https://hunterxtcg.com/market/listing-uuid');
   assert.equal(embed.color, 0xff6b1a);
   assert.equal(embed.image.url, 'https://example.supabase.co/storage/v1/object/public/listing-photos/seller-uuid/1729-front.jpg');
   const field = (name) => embed.fields.find((f) => f.name === name)?.value;
@@ -96,7 +96,7 @@ test('vouch post names who was buyer and seller', () => {
   assert.match(text, /<@400000000000000002> \(buyer\) vouched for <@400000000000000001> \(seller\)/);
   assert.match(text, /★★★★★/);
   assert.match(text, /> Smooth deal, legit!/);
-  assert.match(text, /\[Shiki \\\(048\\\)\]\(https:\/\/hunterx-tcg\.pages\.dev\/market\/listing-uuid\) · ₱300/);
+  assert.match(text, /\[Shiki \\\(048\\\)\]\(https:\/\/hunterxtcg\.com\/market\/listing-uuid\) · ₱300/);
 });
 
 test('new report ticket pings mods and has the right buttons', () => {
@@ -109,7 +109,7 @@ test('new report ticket pings mods and has the right buttons', () => {
       'hx:report:resolve:report-uuid-1234',
       'hx:report:dismiss:report-uuid-1234',
       'hx:report:hide:report-uuid-1234',
-      'https://hunterx-tcg.pages.dev/mod',
+      'https://hunterxtcg.com/mod',
     ],
   );
   const embed = payload.embeds[0];
@@ -144,7 +144,7 @@ test('DMs', () => {
     siteUrl: config.siteUrl,
   });
   assert.match(offer.content, /^💸 \*\*Miromozzz\*\* offered \*\*₱300\*\* for \*\*Shiki \\\(048\\\)\*\* \(listed at ₱500\)\.\n> Last na po\?/);
-  assert.equal(buttons(offer)[0].url, 'https://hunterx-tcg.pages.dev/messages/convo-1');
+  assert.equal(buttons(offer)[0].url, 'https://hunterxtcg.com/messages/convo-1');
 
   const text = newMessageDm({
     message: { kind: 'text', body: 'Available pa?' },

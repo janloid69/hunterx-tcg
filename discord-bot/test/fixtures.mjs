@@ -10,7 +10,7 @@ export const config = {
   marketChannelId: '300000000000000001',
   vouchChannelId: '300000000000000002',
   reportsChannelId: '300000000000000003',
-  siteUrl: 'https://hunterx-tcg.pages.dev',
+  siteUrl: 'https://hunterxtcg.com',
   pollMs: 5000,
   dmCooldownMs: 10 * 60_000,
   roleSyncMs: 6 * 3_600_000,

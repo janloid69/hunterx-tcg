@@ -64,7 +64,7 @@ export function loadConfig(env = process.env) {
     vouchChannelId: ids.VOUCH_CHANNEL_ID,
     reportsChannelId: ids.REPORTS_CHANNEL_ID,
     dropsChannelId: dropsChannelId || null,
-    siteUrl: (value('SITE_URL') || 'https://hunterx-tcg.pages.dev').replace(/\/$/, ''),
+    siteUrl: (value('SITE_URL') || 'https://hunterxtcg.com').replace(/\/$/, ''),
     pollMs: number(env.POLL_SECONDS, 5, { min: 2, max: 300 }) * 1000,
     dmCooldownMs: number(env.DM_COOLDOWN_MINUTES, 10, { min: 0, max: 1440 }) * 60_000,
     roleSyncMs: number(env.ROLE_SYNC_HOURS, 6, { min: 1, max: 168 }) * 3_600_000,
