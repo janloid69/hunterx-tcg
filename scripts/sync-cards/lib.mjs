@@ -15,7 +15,7 @@ export function createThrottle(ms) {
 
 // Card APIs see who is asking, so the sync names itself and how to reach us.
 export const USER_AGENT =
-  'HunterX-TCG-CardSync/1.0 (+https://hunterx-tcg.netlify.app; github.com/janloid69/hunterx-tcg)';
+  'HunterX-TCG-CardSync/1.0 (+https://hunterx-tcg.pages.dev; github.com/janloid69/hunterx-tcg)';
 
 /** GET a JSON URL, retrying on rate limits and server errors. */
 export async function getJson(url, { headers = {}, retries = 4 } = {}) {

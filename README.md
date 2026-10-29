@@ -17,8 +17,8 @@ account deletion, and the Discord bot).
 | `supabase/tests/` | Checks that the database and its security rules work. |
 | `scripts/sync-cards/` | Copies Pokémon, One Piece and Riftbound card data into the database every night. |
 | `discord-bot/` | The HunterX Discord bot: market and vouch posts, DMs, report tickets, role sync. Runs on the 24/7 server; setup in its README. |
-| `.github/workflows/` | Automatic checks on every change, and the nightly card sync. |
-| `netlify.toml` | Free hosting setup for the website on Netlify. |
+| `.github/workflows/` | Automatic checks on every change, publishing the website to Cloudflare Pages, and the nightly card sync. |
+| `netlify.toml`, `netlify-forward/` | The old Netlify address now only forwards to the new one. |
 
 ### What works in Phase 1
 
@@ -63,7 +63,7 @@ account deletion, and the Discord bot).
 
 ## One-time setup
 
-You need four free accounts: **GitHub**, **Supabase**, **Discord Developer Portal**, and **Netlify**.
+You need four free accounts: **GitHub**, **Supabase**, **Discord Developer Portal**, and **Cloudflare**.
 Never paste secret keys (Supabase service role / secret key, Discord client secret) into chat or into
 the code. They go only where these steps say.
 
@@ -89,9 +89,9 @@ the code. They go only where these steps say.
    Client ID and Client Secret from step 1. Copy the **Callback URL** shown there
    (it looks like `https://<project-ref>.supabase.co/auth/v1/callback`).
 4. Back in the Discord Developer Portal → **OAuth2** → **Redirects**, add that Callback URL and save.
-5. Authentication → **URL Configuration**: set **Site URL** to your website address (your Netlify address
-   from step 4, for now `http://localhost:8081`). Under **Redirect URLs**, add both `http://localhost:8081`
-   and your Netlify address.
+5. Authentication → **URL Configuration**: set **Site URL** to your website address
+   (`https://hunterx-tcg.pages.dev`, from step 4). Under **Redirect URLs**, add `https://hunterx-tcg.pages.dev/**`
+   and `http://localhost:8081`.
 6. **Deploy the role-sync function** (no software needed):
    1. Edge Functions → **Deploy a new function** → **Via Editor**. Name it exactly `discord-sync`.
    2. Replace the sample code with the whole of `supabase/functions/discord-sync/index.ts` and click **Deploy**.
@@ -116,14 +116,25 @@ the code. They go only where these steps say.
 2. Open the **Actions** tab → **Sync card data** → **Run workflow**. The first run takes a while (all
    Pokémon sets). After that it runs every night at about 1:47 AM Philippine time.
 
-### 4. Put the website online (Netlify)
+### 4. Put the website online (Cloudflare Pages, free)
 
-1. At <https://app.netlify.com>, choose **Add new site → Import an existing project** and pick this repo.
-   The build settings come from `netlify.toml`.
-2. No settings to add: the website's public Supabase address and key are in `app/.env.production`.
-   (If you ever move to a new Supabase project, update that file.)
-3. Deploy. Add the Netlify address (for example `https://hunterx-tcg.netlify.app`) to Supabase's
-   Site URL and Redirect URLs (step 2.5). A custom domain can come later.
+The **Publish website** workflow builds the site and publishes it on Cloudflare Pages every time the checks
+pass on `main` (unlimited visitors and bandwidth on the free plan).
+
+1. Make a free account at <https://dash.cloudflare.com>. The long code in the address bar after you log in is
+   your **Account ID**.
+2. My Profile → **API Tokens** → Create Token → **Create Custom Token**: permission **Account → Cloudflare Pages →
+   Edit**. Copy the token.
+3. In this repo on GitHub: Settings → Secrets and variables → Actions → add `CLOUDFLARE_API_TOKEN` (the token)
+   and `CLOUDFLARE_ACCOUNT_ID`.
+4. Actions → **Publish website** → Run workflow. The first run creates the project; the run's summary shows
+   the address (`https://hunterx-tcg.pages.dev`). Add it to Supabase's Site URL and Redirect URLs (step 2.5).
+5. No other settings: the website's public Supabase address and key are in `app/.env.production`.
+   (If you ever move to a new Supabase project, update that file.) A custom domain can come later.
+
+The site used to be on Netlify (`hunterx-tcg.netlify.app`). Netlify's free plan now runs on monthly credits, so
+it only forwards the old address: `netlify.toml` and `netlify-forward/` send every old link to the same page on
+the new site.
 
 ### Run it on your own computer (optional)
 
