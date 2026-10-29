@@ -62,6 +62,19 @@ jobs:
           # index.html, which is what a single-page app needs.
           rm -f dist/404.html
           test -f dist/index.html
+          # Expo puts files from packages (the fonts, for one) in assets/node_modules,
+          # and Cloudflare's upload skips every folder named node_modules. Rename it
+          # and update the paths that point to it.
+          if [ -d dist/assets/node_modules ]; then
+            mv dist/assets/node_modules dist/assets/vendor
+            grep -rlZ 'assets/node_modules/' dist --include='*.js' --include='*.html' --include='*.css' --include='*.json' \
+              | xargs -0 -r sed -i 's#assets/node_modules/#assets/vendor/#g'
+          fi
+          if find dist -name node_modules | grep -q .; then echo "::error::A node_modules folder is still in the build"; exit 1; fi
+          if grep -rq 'assets/node_modules/' dist; then echo "::error::The build still points at assets/node_modules"; exit 1; fi
+          # Remember one font's address to check it on the live site.
+          font=$(find dist/assets/vendor -path '*expo-google-fonts*' -name '*.ttf' 2>/dev/null | head -1 | sed 's#^dist##')
+          echo "FONT_PATH=$font" >> "$GITHUB_ENV"
 
       - name: Create the Pages project (first run only)
         if: env.SKIP != 'true'
@@ -103,4 +116,10 @@ jobs:
           curl -sfL "$SITE/community" | grep -q 'id="root"'
           curl -sfIL "$SITE/og-image.png" | grep -qi 'content-type: image/png'
           curl -sfL "$SITE/manifest.webmanifest" | grep -q '"start_url"'
+          # The fonts must come back as fonts, not as the app's page.
+          if [ -n "$FONT_PATH" ]; then
+            curl -sfIL "$SITE$FONT_PATH" | grep -qiE 'content-type: (font/ttf|application/x-font-ttf|application/octet-stream|font/sfnt)'
+          else
+            echo "::warning title=Publish website::Couldn't find the font's address in the build to check it."
+          fi
           echo "::notice title=Published::The website is live at $SITE"
