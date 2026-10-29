@@ -67,8 +67,18 @@ jobs:
           # and update the paths that point to it.
           if [ -d dist/assets/node_modules ]; then
             mv dist/assets/node_modules dist/assets/vendor
-            grep -rlZ 'assets/node_modules/' dist --include='*.js' --include='*.html' --include='*.css' --include='*.json' \
-              | xargs -0 -r sed -i 's#assets/node_modules/#assets/vendor/#g'
+            changed=$(grep -rl 'assets/node_modules/' dist --include='*.js' --include='*.html' --include='*.css' --include='*.json' || true)
+            for file in $changed; do sed -i 's#assets/node_modules/#assets/vendor/#g' "$file"; done
+            # Browsers keep script files for hours, so a script whose content just
+            # changed gets a new name (from its new content) and the page points at it.
+            for file in $changed; do
+              case "$file" in dist/_expo/static/*.js) ;; *) continue ;; esac
+              old_name=$(basename "$file")
+              new_name="${old_name%-*}-$(md5sum "$file" | cut -c1-32).js"
+              mv "$file" "$(dirname "$file")/$new_name"
+              grep -rlZ "$old_name" dist --include='*.html' --include='*.js' --include='*.json' | xargs -0 -r sed -i "s#$old_name#$new_name#g"
+              echo "Renamed $old_name to $new_name"
+            done
           fi
           if find dist -name node_modules | grep -q .; then echo "::error::A node_modules folder is still in the build"; exit 1; fi
           if grep -rq 'assets/node_modules/' dist; then echo "::error::The build still points at assets/node_modules"; exit 1; fi
@@ -116,6 +126,12 @@ jobs:
           curl -sfL "$SITE/community" | grep -q 'id="root"'
           curl -sfIL "$SITE/og-image.png" | grep -qi 'content-type: image/png'
           curl -sfL "$SITE/manifest.webmanifest" | grep -q '"start_url"'
+          # The live page's scripts must not point at the folder Cloudflare skips.
+          for js in $(grep -oE 'src="/_expo/[^"]+\.js"' home.html | sed -E 's/src="([^"]+)"/\1/'); do
+            if curl -sfL "$SITE$js" | grep -q 'assets/node_modules/'; then
+              echo "::error title=Publish website::$js still points at assets/node_modules"; exit 1
+            fi
+          done
           # The fonts must come back as fonts, not as the app's page.
           if [ -n "$FONT_PATH" ]; then
             curl -sfIL "$SITE$FONT_PATH" | grep -qiE 'content-type: (font/ttf|application/x-font-ttf|application/octet-stream|font/sfnt)'
