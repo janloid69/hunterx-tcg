@@ -15,7 +15,8 @@ Runs on the HunterX 24/7 server and connects the website to the Discord:
 - **Roles:** Verified Seller (hunterxcircle) and Mod badges on the website update the moment roles change in
   Discord, including when a Circle subscription ends or someone leaves. Everyone is re-checked every 6 hours.
 - **Upcoming drops:** the latest posts in #upcoming-drops (text, links, pictures, replies) show on the website's
-  Community page, within seconds of being posted, edited or deleted. Set `DROPS_CHANNEL_ID` (see below).
+  Community page for Verified Sellers and mods, within seconds of being posted, edited or deleted. Set
+  `DROPS_CHANNEL_ID` (see below).
 - **Server events:** upcoming Discord events (pull nights, meetups) are also copied to the database every 15
   minutes, ready to show on the site again later.
 

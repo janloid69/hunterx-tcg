@@ -290,6 +290,31 @@ await check('sealed search: "151 etb" finds the Elite Trainer Box and shows its 
   }
 });
 
+// Answers the signed-in member's profile request.
+async function routeProfile(context, fields) {
+  await context.route(/\/rest\/v1\/profiles/, (route) => {
+    const profile = {
+      id: userId, discord_id: '500000000000000099', username: 'smoke', display_name: 'Smoke Test', avatar_url: null,
+      in_guild: true, is_verified_seller: false, is_mod: false, discord_dms: true, created_at: new Date().toISOString(), ...fields,
+    };
+    const single = (route.request().headers().accept ?? '').includes('vnd.pgrst.object');
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? profile : [profile]) });
+  });
+}
+
+await check('Community: members without Verified Seller see how to get drops, not the posts', async (page, context) => {
+  await signIn(context);
+  let asked = false;
+  await context.route(/\/rest\/v1\/community_drops/, (route) => {
+    asked = true;
+    return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+  });
+  await routeProfile(context, { is_verified_seller: false });
+  await page.goto(`${site}/community`);
+  await visible(page, 'Upcoming drops are for Verified Sellers');
+  if (asked) throw new Error('the page asked for drops it may not show');
+});
+
 await check('Community shows the latest #upcoming-drops posts with links, replies and pictures', async (page, context) => {
   await signIn(context);
   const now = Date.now();
@@ -309,6 +334,7 @@ await check('Community shows the latest #upcoming-drops posts with links, replie
   await context.route(/\/rest\/v1\/community_drops/, (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(drops) }),
   );
+  await routeProfile(context, { is_verified_seller: true });
   await page.goto(`${site}/community`);
   await visible(page, 'Upcoming drops');
   await visible(page, 'Open #upcoming-drops');

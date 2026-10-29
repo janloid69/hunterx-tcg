@@ -19,7 +19,9 @@ const memberName = (person: { display_name: string | null; username: string | nu
 
 export default function CommunityScreen() {
   const { profile } = useAuth();
-  const drops = useQuery(() => getLatestDrops(10), []);
+  // Drops are for Verified Sellers (hunterxcircle) and mods; the database checks too.
+  const canSeeDrops = Boolean(profile?.is_verified_seller || profile?.is_mod);
+  const drops = useQuery(() => (canSeeDrops ? getLatestDrops(10) : Promise.resolve([])), [canSeeDrops]);
   const vouches = useQuery(() => getLatestVouches(8), []);
   const traders = useQuery(() => getTopTraders(10), []);
 
@@ -54,27 +56,52 @@ export default function CommunityScreen() {
         />
       </View>
 
-      <View style={styles.section}>
-        <SectionHeader
-          title="Upcoming drops"
-          action={
-            drops.data && drops.data.length > 0
-              ? { label: 'Open #upcoming-drops', onPress: () => Linking.openURL(dropChannelUrl(drops.data![0])) }
-              : undefined
-          }
-        />
-        {drops.loading && !drops.data ? <ActivityIndicator color={colors.accent} /> : null}
-        {drops.error ? <AppText variant="small">{drops.error}</AppText> : null}
-        {drops.data && drops.data.length === 0 ? (
-          <AppText variant="small">
-            No drops posted yet. When the community shares an upcoming release or restock in #upcoming-drops on
-            Discord, it shows up here.
-          </AppText>
-        ) : null}
-        {(drops.data ?? []).map((drop) => (
-          <DropCard key={drop.id} drop={drop} />
-        ))}
-      </View>
+      {profile ? (
+        <View style={styles.section}>
+          <SectionHeader
+            title="Upcoming drops"
+            action={
+              canSeeDrops && drops.data && drops.data.length > 0
+                ? { label: 'Open #upcoming-drops', onPress: () => Linking.openURL(dropChannelUrl(drops.data![0])) }
+                : undefined
+            }
+          />
+          {canSeeDrops ? (
+            <>
+              {drops.loading && !drops.data ? <ActivityIndicator color={colors.accent} /> : null}
+              {drops.error ? <AppText variant="small">{drops.error}</AppText> : null}
+              {drops.data && drops.data.length === 0 ? (
+                <AppText variant="small">
+                  No drops posted yet. When an upcoming release or restock is shared in #upcoming-drops on Discord, it
+                  shows up here.
+                </AppText>
+              ) : null}
+              {(drops.data ?? []).map((drop) => (
+                <DropCard key={drop.id} drop={drop} />
+              ))}
+            </>
+          ) : (
+            <View style={styles.lockedCard}>
+              <View style={styles.titleRow}>
+                <Icon name="shield" size={20} color={colors.discordIcon} />
+                <AppText variant="bodyStrong" style={{ flex: 1 }}>
+                  Upcoming drops are for Verified Sellers
+                </AppText>
+              </View>
+              <AppText variant="small" color={colors.discordText}>
+                Get the hunterxcircle role in the HunterX Discord to see upcoming releases and restocks here as soon as
+                they’re posted.
+              </AppText>
+              <Button
+                label={profile.in_guild ? 'Open the Discord' : 'Join the Discord'}
+                variant="discord"
+                icon="external"
+                onPress={() => Linking.openURL(discordInviteUrl)}
+              />
+            </View>
+          )}
+        </View>
+      ) : null}
 
       <View style={styles.section}>
         <SectionHeader title="Latest vouches" />
@@ -183,6 +210,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  lockedCard: {
+    backgroundColor: colors.discordSurface,
+    borderColor: colors.discordBorder,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    gap: 10,
+  },
   badges: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
   section: { gap: 12 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 },

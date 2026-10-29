@@ -38,7 +38,8 @@ account deletion, and the Discord bot).
 - **Discord bot:** posts listings and vouches in their channels, DMs members about messages and deals (they can
   turn this off on Profile), opens report tickets with mod buttons, keeps badges in sync with Discord roles, and
   copies #upcoming-drops posts to the Community page.
-- **Community:** the latest #upcoming-drops posts from Discord, latest vouches and top traders.
+- **Community:** the latest #upcoming-drops posts from Discord (Verified Sellers and mods only), latest vouches and
+  top traders.
 - **Mod tools:** reports, plus a review queue for toys and sealed products members add (approve, fix the name,
   merge duplicates, remove junk).
 - **House rules and privacy** page, reachable before signing in.
