@@ -23,6 +23,9 @@ concurrency:
 env:
   PROJECT: hunterx-tcg
   WRANGLER: wrangler@4.150.0
+  # The site's own domain (connected under Workers & Pages → hunterx-tcg → Custom domains).
+  # hunterx-tcg.pages.dev and www forward here.
+  DOMAIN: https://hunterxtcg.com
 
 jobs:
   publish:
@@ -80,21 +83,24 @@ jobs:
           SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           npx --yes "$WRANGLER" pages deploy app/dist --project-name="$PROJECT" --branch=main --commit-hash="$SHA" --commit-dirty=true | tee deploy.log
-          # "https://abc123.hunterx-tcg.pages.dev" -> the site's own address "https://hunterx-tcg.pages.dev"
-          site=$(grep -oE 'https://[a-z0-9]+\.[a-z0-9-]+\.pages\.dev' deploy.log | head -1 | sed -E 's#https://[a-z0-9]+\.#https://#')
-          if [ -z "$site" ]; then site="https://$PROJECT.pages.dev"; fi
-          echo "SITE=$site" >> "$GITHUB_ENV"
+          # Before a domain is connected, check Cloudflare's own address instead:
+          # "https://abc123.hunterx-tcg.pages.dev" -> "https://hunterx-tcg.pages.dev"
+          site="$DOMAIN"
+          if [ -z "$site" ]; then
+            site=$(grep -oE 'https://[a-z0-9]+\.[a-z0-9-]+\.pages\.dev' deploy.log | head -1 | sed -E 's#https://[a-z0-9]+\.#https://#')
+          fi
+          echo "SITE=${site:-https://$PROJECT.pages.dev}" >> "$GITHUB_ENV"
 
       - name: Check the live site
         if: env.SKIP != 'true'
         run: |
           # Give Cloudflare a moment, then check the home page, a deep link and the preview image.
           for i in $(seq 1 40); do
-            if curl -sf "$SITE/" -o home.html && grep -q 'id="root"' home.html; then break; fi
+            if curl -sfL "$SITE/" -o home.html && grep -q 'id="root"' home.html; then break; fi
             sleep 6
           done
           grep -q 'id="root"' home.html
-          curl -sf "$SITE/community" | grep -q 'id="root"'
-          curl -sfI "$SITE/og-image.png" | grep -qi 'content-type: image/png'
-          curl -sf "$SITE/manifest.webmanifest" | grep -q '"start_url"'
+          curl -sfL "$SITE/community" | grep -q 'id="root"'
+          curl -sfIL "$SITE/og-image.png" | grep -qi 'content-type: image/png'
+          curl -sfL "$SITE/manifest.webmanifest" | grep -q '"start_url"'
           echo "::notice title=Published::The website is live at $SITE"
